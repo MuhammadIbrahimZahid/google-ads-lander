@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { trackGenerateLead } from "@/lib/analytics";
 
 declare global {
   interface Window {
@@ -11,7 +12,7 @@ declare global {
 
 export default function ThankYouPage() {
   useEffect(() => {
-    window.gtag?.("event", "generate_lead", {
+    trackGenerateLead({
       lead_source: "landing_page",
     });
 
