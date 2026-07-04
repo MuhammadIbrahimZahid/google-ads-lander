@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { trackGenerateLead } from "@/lib/analytics";
+import { canConvert, clearConversion } from "@/lib/session";
+import { useRouter } from "next/router";
 
 declare global {
   interface Window {
@@ -11,13 +13,22 @@ declare global {
 }
 
 export default function ThankYouPage() {
+  const router = useRouter();
+
   useEffect(() => {
+    if (!canConvert()) {
+      router.replace("/");
+      return;
+    }
+
     trackGenerateLead({
       lead_source: "landing_page",
     });
 
+    clearConversion();
+
     console.log("GA4 generate_lead event sent");
-  }, []);
+  }, [router]);
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-green-50 px-6">

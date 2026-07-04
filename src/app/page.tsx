@@ -1,11 +1,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { allowConversion } from "@/lib/session";
+import { trackHeroCTAClick } from "@/lib/analytics";
 
 export default function Home() {
   const router = useRouter();
 
   const handleClick = () => {
+    allowConversion();
+
+    trackHeroCTAClick({
+      button_name: "Get Started",
+    });
+
     router.push("/thank-you");
   };
 
