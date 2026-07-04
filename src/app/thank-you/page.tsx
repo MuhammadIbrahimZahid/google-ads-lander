@@ -3,12 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { trackGenerateLead } from "@/lib/analytics";
-import {
-  canConvert,
-  clearConversion,
-  hasFiredConversion,
-  markConversionFired,
-} from "@/lib/session";
+import { canConvert, consumeConversion, getConversion } from "@/lib/session";
 import { useRouter } from "next/navigation";
 
 declare global {
@@ -26,7 +21,9 @@ export default function ThankYouPage() {
       return;
     }
 
-    if (hasFiredConversion()) {
+    const conversion = getConversion();
+
+    if (!conversion || conversion.fired) {
       return;
     }
 
@@ -34,8 +31,7 @@ export default function ThankYouPage() {
       lead_source: "landing_page",
     });
 
-    markConversionFired();
-    clearConversion();
+    consumeConversion();
   }, [router]);
 
   return (
