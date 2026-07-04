@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { trackGenerateLead } from "@/lib/analytics";
 import { canConvert, clearConversion } from "@/lib/session";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 
 declare global {
   interface Window {
