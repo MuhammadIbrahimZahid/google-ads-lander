@@ -3,7 +3,12 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { trackGenerateLead } from "@/lib/analytics";
-import { canConvert, clearConversion } from "@/lib/session";
+import {
+  canConvert,
+  clearConversion,
+  hasFiredConversion,
+  markConversionFired,
+} from "@/lib/session";
 import { useRouter } from "next/navigation";
 
 declare global {
@@ -21,13 +26,16 @@ export default function ThankYouPage() {
       return;
     }
 
+    if (hasFiredConversion()) {
+      return;
+    }
+
     trackGenerateLead({
       lead_source: "landing_page",
     });
 
+    markConversionFired();
     clearConversion();
-
-    console.log("GA4 generate_lead event sent");
   }, [router]);
 
   return (
