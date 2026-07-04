@@ -44,9 +44,7 @@ export default function RootLayout({
 
             if (GA_ID) {
               gtag('js', new Date());
-              gtag('config', GA_ID, {
-                debug_mode: true,
-              });
+              gtag('config', GA_ID,);
             }
           }
         `}
