@@ -27,9 +27,15 @@ export default function ThankYouPage() {
       return;
     }
 
+    const KEY = `lead_fired_${conversion.eventId}`;
+
+    if (sessionStorage.getItem(KEY)) return;
+
     trackGenerateLead({
       lead_source: "landing_page",
     });
+
+    sessionStorage.setItem(KEY, "1");
 
     consumeConversion();
   }, [router]);
