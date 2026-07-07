@@ -6,12 +6,6 @@ import { trackGenerateLead } from "@/lib/analytics";
 import { canConvert, consumeConversion, getConversion } from "@/lib/session";
 import { useRouter } from "next/navigation";
 
-declare global {
-  interface Window {
-    gtag?: (...args: unknown[]) => void;
-  }
-}
-
 export default function ThankYouPage() {
   const router = useRouter();
 
