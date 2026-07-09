@@ -17,19 +17,15 @@ export default function ThankYouPage() {
 
     const conversion = getConversion();
 
-    if (!conversion || conversion.fired) {
+    if (!conversion || !canConvert() || conversion.fired) {
+      router.replace("/");
       return;
     }
 
-    const KEY = `lead_fired_${conversion.eventId}`;
-
-    if (sessionStorage.getItem(KEY)) return;
-
     trackGenerateLead({
       lead_source: "landing_page",
+      event_id: conversion.eventId,
     });
-
-    sessionStorage.setItem(KEY, "1");
 
     consumeConversion();
   }, [router]);
