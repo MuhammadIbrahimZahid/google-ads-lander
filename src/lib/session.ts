@@ -62,32 +62,6 @@ export function canConvert() {
   return conversion?.allowed === true;
 }
 
-/**
- * Step 3: Mark conversion as fired
- */
-export function markConversionFired() {
-  if (typeof window === "undefined") return;
-
-  const conversion = readConversion();
-
-  if (!conversion) return;
-
-  saveConversion({
-    ...conversion,
-    fired: true,
-  });
-}
-
-/**
- * Step 4: Check if already fired
- */
-export function hasFiredConversion() {
-  if (typeof window === "undefined") return false;
-
-  const conversion = readConversion();
-  return conversion?.fired === true;
-}
-
 export function consumeConversion() {
   if (typeof window === "undefined") return;
 
