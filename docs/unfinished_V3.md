@@ -1344,60 +1344,438 @@ because it:
 
 ---
 
-# Final Mental Model
+# 22. Google Analytics Events
 
-Think of the system as a ticket machine:
+Our application sends two custom Google Analytics events.
 
-```
-User clicks CTA
+## hero_cta_click
 
-        ↓
+This event is fired when the user clicks the **Get Started** button on the landing page.
 
-Create ticket
+Flow:
 
-        ↓
-
-Store ticket
-
-        ↓
-
-User reaches thank-you page
-
-        ↓
-
-Validate ticket
-
-        ↓
-
-Use ticket
-
-        ↓
-
-Mark ticket consumed
-
-        ↓
-
-Reject reuse
+```text
+Landing Page
+      ↓
+Click Get Started
+      ↓
+trackHeroCTAClick()
+      ↓
+sendEvent()
+      ↓
+window.gtag()
+      ↓
+Google Analytics
 ```
 
-The whole system answers:
+Example:
 
-> "Did this user complete the intended conversion journey, and have we already counted it?"
+```ts
+trackHeroCTAClick({
+  button_name: "Get Started",
+});
+```
+
+Google Analytics receives:
+
+```text
+hero_cta_click
+```
+
+### Purpose
+
+Measure user interest.
+
+This event answers the question:
+
+> "Did the user show interest by clicking the primary Call-To-Action button?"
+
+This event is **not** considered a conversion because clicking a button does not necessarily mean the user completed the intended journey.
 
 ---
 
-`hero_cta_click` answers:
+## generate_lead
 
-> "Did the user show interest?"
+This event represents the successful completion of the conversion journey.
 
-`generate_lead` answers:
+Flow:
 
-> "Did the user complete the conversion?"
+```text
+Landing Page
+      ↓
+Click Get Started
+      ↓
+Navigate to /thank-you
+      ↓
+trackGenerateLead()
+      ↓
+sendEvent()
+      ↓
+window.gtag()
+      ↓
+Google Analytics
+```
 
-`sessionStorage` manages the current visit.
+Example:
 
-`localStorage` remembers browser-level history.
+```ts
+trackGenerateLead({
+  lead_source: "landing_page",
+  event_id: conversion.eventId,
+});
+```
 
-`gtag` sends events to Google Analytics.
+Google Analytics receives:
 
-The application is a small **conversion tracking state machine built on top of Next.js**.
+```text
+generate_lead
+```
+
+with parameters:
+
+```json
+{
+  "lead_source": "landing_page",
+  "event_id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+### lead_source
+
+Identifies where the lead originated.
+
+Current value:
+
+```text
+landing_page
+```
+
+In larger applications, this could be:
+
+- landing_page
+- pricing_page
+- contact_page
+- newsletter
+- popup
+- checkout
+
+This makes it easier to identify which part of the website generated the lead.
+
+---
+
+### event_id
+
+The `event_id` is a stable identifier for a specific conversion.
+
+Purpose:
+
+- Identify a unique conversion.
+- Assist with debugging.
+- Support event deduplication.
+- Prepare for future server-side or offline conversion tracking.
+
+Although our project does not currently use `event_id` for deduplication, including it now makes the implementation more realistic and future-ready.
+
+---
+
+# 23. Marking generate_lead as a Key Event
+
+Google Analytics records every event that reaches the property.
+
+However, not every event represents a business goal.
+
+For our project:
+
+| Event          | Key Event |
+| -------------- | --------- |
+| page_view      | ❌ No     |
+| hero_cta_click | ❌ No     |
+| generate_lead  | ✅ Yes    |
+
+After verifying that `generate_lead` was being received by Google Analytics, we marked it as a **Key Event**.
+
+This tells Google Analytics:
+
+> "This event represents a successful business outcome."
+
+Google Analytics can now use this event in:
+
+- Conversion reports
+- Acquisition reports
+- Attribution reports
+- User journey analysis
+
+In our project, `generate_lead` is the event that represents a completed conversion.
+
+---
+
+# 24. Connecting Google Analytics to Google Ads
+
+Our project also connects Google Analytics with Google Ads.
+
+The purpose is **not** to run advertisements.
+
+Instead, it allows Google Ads to import conversion events from Google Analytics.
+
+The setup process was:
+
+```text
+Google Ads
+    ↓
+Tools
+    ↓
+Data Manager
+    ↓
+Linked Google Analytics Property
+    ↓
+Manage
+    ↓
+(Optional) Import Google Analytics Audiences
+    ↓
+Create Conversion Action
+    ↓
+Website
+    ↓
+Scan Website
+    ↓
+Google detects the existing GA4 property
+    ↓
+Select generate_lead
+```
+
+### Import Google Analytics Audiences
+
+Inside **Data Manager**, Google Ads provides an option to import Google Analytics audiences.
+
+This is primarily used for:
+
+- Remarketing
+- Audience targeting
+- Customer segmentation
+
+Our project does not rely on this feature, but enabling it prepares the account for future advertising scenarios.
+
+### Scan Website
+
+Instead of manually installing another tracking tag, Google Ads scans the website and detects the existing Google Analytics implementation.
+
+Because our website already uses `gtag.js`, Google Ads can automatically associate the website with the linked GA4 property.
+
+---
+
+# 25. Creating the Google Ads Conversion Action
+
+The conversion action was configured using our GA4 event.
+
+Configuration:
+
+| Setting           | Value                  |
+| ----------------- | ---------------------- |
+| Conversion Name   | Submit lead form       |
+| Source            | Google Analytics (GA4) |
+| Imported Event    | generate_lead          |
+| Count             | One                    |
+| Default Value     | 1 PKR                  |
+| Attribution Model | Data-driven            |
+
+### Count = One
+
+A user should only become one lead.
+
+If the user refreshes the thank-you page or revisits it during the same conversion journey, we do not want multiple conversions to be counted.
+
+This aligns perfectly with our duplicate prevention logic using:
+
+- `sessionStorage`
+- `fired`
+- `consumeConversion()`
+
+### Default Value
+
+Google Ads allows assigning a monetary value to each conversion.
+
+For learning purposes, we assigned:
+
+```text
+1 PKR
+```
+
+In a real business, this value would represent the estimated worth of one lead.
+
+### Attribution Model
+
+We selected:
+
+```text
+Data-driven
+```
+
+This is Google's recommended attribution model.
+
+If multiple Google Ads interactions contribute to a conversion, Google distributes credit across those interactions instead of assigning all credit to only the last click.
+
+---
+
+# 26. Why Google Analytics Shows a Conversion but Google Ads Does Not
+
+After completing our project, Google Analytics reported:
+
+```text
+generate_lead = 1
+```
+
+However, Google Ads reported:
+
+```text
+No recent conversions
+```
+
+At first glance, this appears confusing.
+
+The implementation is actually working correctly.
+
+The difference lies in what each platform measures.
+
+## Google Analytics
+
+Google Analytics asks:
+
+> "Did this event happen on the website?"
+
+In our test:
+
+```text
+Browser
+    ↓
+Landing Page
+    ↓
+Click Get Started
+    ↓
+Thank You Page
+    ↓
+generate_lead
+```
+
+The answer is:
+
+```text
+Yes
+```
+
+Therefore, Google Analytics records one conversion.
+
+---
+
+## Google Ads
+
+Google Ads asks a different question:
+
+> "Did one of my advertisements cause this conversion?"
+
+Our test user visited the website directly.
+
+There was no Google Ads click before reaching the landing page.
+
+Therefore, Google Ads has no advertisement to attribute the conversion to.
+
+Result:
+
+| Platform         | Result           |
+| ---------------- | ---------------- |
+| Google Analytics | ✅ 1 Conversion  |
+| Google Ads       | ❌ 0 Conversions |
+
+This does **not** indicate a problem with the tracking implementation.
+
+It simply means that no Google Ads interaction occurred before the conversion.
+
+---
+
+## If the Visitor Came from Google Ads
+
+The journey would look like this:
+
+```text
+Google Search Ad
+      ↓
+Landing Page
+      ↓
+Click Get Started
+      ↓
+Thank You Page
+      ↓
+generate_lead
+```
+
+In that case:
+
+- Google Analytics records the event.
+- Google Ads can attribute the conversion to the advertisement.
+- The conversion can appear in Google Ads reporting (subject to normal processing delays and attribution rules).
+
+---
+
+# Final Mental Model
+
+Think of the system as a conversion tracking pipeline:
+
+```text
+User
+    ↓
+Landing Page
+    ↓
+Clicks Get Started
+    ↓
+Create conversion record
+    ↓
+Store conversion in sessionStorage
+    ↓
+Navigate to /thank-you
+    ↓
+Validate conversion
+    ↓
+Fire generate_lead
+    ↓
+Google Analytics receives the event
+    ↓
+generate_lead is counted as a Key Event
+    ↓
+Google Ads imports the conversion (if it can be attributed to a Google Ads interaction)
+```
+
+The purpose of this project is to answer two questions:
+
+### 1. Did the user complete the intended conversion journey?
+
+This is answered by our application using:
+
+- `sessionStorage`
+- Conversion validation
+- Duplicate prevention (`fired`)
+- `generate_lead`
+
+### 2. Did Google Analytics receive the conversion?
+
+This is answered by GA4.
+
+If `generate_lead` appears in the Events and Key Events reports, our analytics implementation is working correctly.
+
+### 3. Can Google Ads attribute this conversion to one of its ads?
+
+This is answered by Google Ads.
+
+Google Ads only counts imported GA4 conversions when they can be attributed to a Google Ads interaction. A direct or organic visitor may generate a `generate_lead` event in GA4, but it will not appear as a Google Ads conversion because no Google Ads click was involved.
+
+---
+
+In summary:
+
+- `hero_cta_click` measures user interest.
+- `generate_lead` measures a completed conversion.
+- `sessionStorage` manages the conversion journey for the current browser session.
+- `localStorage` remembers browser-level information, such as whether the CTA click has already been tracked.
+- `gtag()` sends events to Google Analytics.
+- Google Analytics records and reports the events.
+- Google Ads can import GA4 conversions and attribute them only when they originate from eligible Google Ads interactions.
+
+The result is a small but realistic conversion tracking system built with Next.js, Google Analytics 4, and Google Ads.
