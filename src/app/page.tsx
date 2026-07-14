@@ -3,17 +3,20 @@
 import { useRouter } from "next/navigation";
 import { ensureConversion } from "@/lib/session";
 import { trackHeroCTAClick } from "@/lib/analytics";
+import { hasTrackedHeroClick, markHeroClickTracked } from "@/lib/tracking";
 
 export default function Home() {
   const router = useRouter();
-  const KEY = "hero_click_fired";
 
   const handleClick = () => {
     ensureConversion();
 
-    if (!localStorage.getItem(KEY)) {
-      trackHeroCTAClick({ button_name: "Get Started" });
-      localStorage.setItem(KEY, "1");
+    if (!hasTrackedHeroClick()) {
+      trackHeroCTAClick({
+        button_name: "Get Started",
+      });
+
+      markHeroClickTracked();
     }
 
     router.push("/thank-you");
