@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { issueConversion } from "@/lib/session";
+import { ensureConversion } from "@/lib/session";
 import { trackHeroCTAClick } from "@/lib/analytics";
 
 export default function Home() {
@@ -9,7 +9,7 @@ export default function Home() {
   const KEY = "hero_click_fired";
 
   const handleClick = () => {
-    issueConversion();
+    ensureConversion();
 
     if (!localStorage.getItem(KEY)) {
       trackHeroCTAClick({ button_name: "Get Started" });

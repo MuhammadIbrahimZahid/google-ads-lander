@@ -37,7 +37,7 @@ export function getConversion(): Conversion | null {
 /**
  * Step 1: Called when CTA is clicked
  */
-export function issueConversion() {
+export function ensureConversion() {
   if (typeof window === "undefined") return;
 
   const existing = readConversion();
