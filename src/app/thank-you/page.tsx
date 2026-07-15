@@ -17,7 +17,7 @@ export default function ThankYouPage() {
 
     const conversion = getConversion();
 
-    if (!conversion || !canConvert() || conversion.fired) {
+    if (!conversion || conversion.fired) {
       router.replace("/");
       return;
     }

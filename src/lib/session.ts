@@ -1,12 +1,20 @@
 import { Conversion } from "@/types/session";
 
 const CONVERSION_KEY = "conversion";
+const CONVERSION_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
 
 /**
  * Save full conversion object into sessionStorage
  */
 function saveConversion(conversion: Conversion) {
   sessionStorage.setItem(CONVERSION_KEY, JSON.stringify(conversion));
+}
+
+/**
+ * Remove the active conversion
+ */
+function clearConversion() {
+  sessionStorage.removeItem(CONVERSION_KEY);
 }
 
 /**
@@ -26,6 +34,13 @@ function readConversion(): Conversion | null {
   }
 }
 
+/**
+ * Check whether a conversion has expired.
+ */
+function isExpired(conversion: Conversion) {
+  return Date.now() - conversion.createdAt > CONVERSION_EXPIRY_MS;
+}
+
 export function getConversion(): Conversion | null {
   if (typeof window === "undefined") {
     return null;
@@ -35,33 +50,55 @@ export function getConversion(): Conversion | null {
 }
 
 /**
- * Step 1: Called when CTA is clicked
+ * Ensure a conversion exists.
+ * Reuses the current conversion if still valid,
+ * otherwise creates a fresh one.
  */
-export function issueConversion() {
+export function ensureConversion() {
   if (typeof window === "undefined") return;
 
   const existing = readConversion();
 
+  if (existing && !isExpired(existing)) {
+    return;
+  }
+
   const conversion: Conversion = {
-    eventId: existing?.eventId ?? crypto.randomUUID(),
+    eventId: crypto.randomUUID(),
     allowed: true,
-    fired: existing?.fired ?? false,
-    createdAt: existing?.createdAt ?? Date.now(),
+    fired: false,
+    createdAt: Date.now(),
   };
 
   saveConversion(conversion);
 }
 
 /**
- * Step 2: Check if conversion is allowed
+ * Determine whether the current conversion
+ * is eligible to be completed.
  */
 export function canConvert() {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined") {
+    return false;
+  }
 
   const conversion = readConversion();
-  return conversion?.allowed === true;
+
+  if (!conversion) {
+    return false;
+  }
+
+  if (isExpired(conversion)) {
+    clearConversion();
+    return false;
+  }
+
+  return conversion.allowed;
 }
 
+/**
+ * Mark the current conversion as completed.
+ */
 export function consumeConversion() {
   if (typeof window === "undefined") return;
 
