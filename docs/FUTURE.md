@@ -1,25 +1,26 @@
-# Google Ads Conversion Tracking System — Phase Roadmap After Phase 1
+# Google Ads Conversion Tracking System — Future Roadmap After Phase 1
 
 ## Completed Phase 1 — Browser Conversion Tracking Foundation ✅
 
 ### Goal
 
-Build a complete browser-based conversion tracking pipeline.
+Build a reliable browser-based conversion tracking system using Next.js, GA4, and Google Ads integration.
 
-### Implemented:
+### Implemented
 
 - Next.js App Router
-- Client/server execution understanding
-- GA4 initialization with `gtag`
-- Custom analytics events:
+- Client/server execution model
+- GA4 initialization using `gtag`
+- Analytics abstraction layer
+- Custom events:
   - `hero_cta_click`
   - `generate_lead`
 
-- Google Analytics Key Event setup
-- Google Ads conversion import
 - Conversion state management
+- Session-based conversion validation
 - Duplicate conversion prevention
 - Conversion expiry handling
+- Google Ads conversion import foundation
 
 ### Current Architecture
 
@@ -32,11 +33,11 @@ Landing Page
 
 ↓
 
-Click Get Started
+CTA Click
 
 ↓
 
-ensureConversion()
+Create Conversion Journey
 
 ↓
 
@@ -63,7 +64,7 @@ GA4
 Google Ads
 ```
 
-### Limitation
+### Current Limitation
 
 The system knows:
 
@@ -73,18 +74,18 @@ but it does not know:
 
 - Who converted
 - Where the user came from
-- Whether the lead became valuable
-- Whether the lead generated revenue
+- Whether the lead was valuable
+- Whether revenue was generated
 
-Phase 2 begins solving that.
+Future phases transform this from a tracking prototype into a complete marketing attribution system.
 
 ---
 
-# Phase 2 — CRM Lead Tracking
+# Phase 2 — Lead Capture & Database Foundation
 
 ## Goal
 
-Move from tracking conversions to storing real business leads.
+Move from anonymous conversion tracking to storing real customer leads.
 
 Current:
 
@@ -134,7 +135,7 @@ generate_lead
 
 ## New Capabilities
 
-The system will capture:
+The system stores:
 
 ```
 Name
@@ -143,20 +144,18 @@ Email
 
 Phone
 
+Timestamp
+
+Landing Page
+
+UTM Parameters
+
 gclid
 
-utm_source
-
-utm_medium
-
-utm_campaign
-
-utm_term
-
-utm_content
-
-timestamp
+Referrer
 ```
+
+The database becomes the source of truth.
 
 ---
 
@@ -165,43 +164,8 @@ timestamp
 - Form handling
 - API routes
 - Database integration
-- Lead models
-- URL parameter capture
+- Data modeling
 - First-party data storage
-
----
-
-## Architecture Upgrade
-
-Before:
-
-```
-Browser
-
-↓
-
-Google Analytics
-```
-
-After:
-
-```
-Browser
-
-↓
-
-Application
-
-↓
-
-Database
-
-↓
-
-Google Analytics
-```
-
-The application becomes the source of truth.
 
 Difficulty:
 
@@ -213,21 +177,20 @@ Difficulty:
 
 ## Goal
 
-Understand where every lead came from.
+Understand exactly where every lead originated.
 
-A lead should not only say:
-
-```
-John submitted form
-```
-
-It should say:
+Instead of:
 
 ```
-John submitted form
+John submitted a form
+```
 
-from:
+The system understands:
 
+```
+John submitted a form
+
+Source:
 Google Ads
 
 Campaign:
@@ -242,15 +205,17 @@ xxxxx
 
 ---
 
-## New Concepts
-
-Capture:
+## Data Captured
 
 - gclid
-- UTM parameters
-- Landing page
+- UTM source
+- UTM medium
+- UTM campaign
+- UTM term
+- UTM content
 - Referrer
 - Device information
+- Landing page
 
 ---
 
@@ -290,11 +255,77 @@ Difficulty:
 
 ---
 
-# Phase 4 — Enhanced Conversions
+# Phase 4 — Google Tag Manager & Data Layer
 
 ## Goal
 
-Improve Google Ads matching using first-party customer information.
+Move tracking management from application code into an industry-standard tag management system.
+
+Current:
+
+```
+Next.js
+
+↓
+
+gtag()
+
+↓
+
+GA4
+```
+
+New:
+
+```
+Next.js
+
+↓
+
+dataLayer
+
+↓
+
+Google Tag Manager
+
+↓
+
+GA4
+
+↓
+
+Google Ads
+```
+
+---
+
+## New Capabilities
+
+- Centralized tag management
+- Event configuration without code changes
+- Cleaner marketing/engineering separation
+- Better debugging workflows
+
+---
+
+## Skills Learned
+
+- Google Tag Manager
+- Data Layer architecture
+- Tag configuration
+- Event debugging
+
+Difficulty:
+
+⭐⭐⭐
+
+---
+
+# Phase 5 — Google Ads Enhanced Conversions for Leads
+
+## Goal
+
+Improve Google Ads conversion matching using first-party customer information.
 
 Current:
 
@@ -309,15 +340,11 @@ event_id
 New:
 
 ```
-Conversion
+Lead Data
 
 ↓
 
-Email
-
-Phone
-
-Name
+Email / Phone
 
 ↓
 
@@ -332,16 +359,10 @@ Google Ads
 
 ## Skills Learned
 
-- First-party data
-- Privacy-safe matching
+- First-party data handling
+- Privacy-safe hashing
 - Enhanced Conversions for Leads
-- Better attribution quality
-
----
-
-## Why Before Offline Conversion?
-
-Because enhanced conversions become the identity foundation for later CRM-based conversion imports.
+- Better conversion matching
 
 Difficulty:
 
@@ -349,11 +370,11 @@ Difficulty:
 
 ---
 
-# Phase 5 — Offline Qualified Lead Tracking
+# Phase 6 — Qualified Lead Tracking
 
 ## Goal
 
-Teach Google Ads which leads are actually valuable.
+Teach the system that not every lead has equal value.
 
 Current:
 
@@ -368,11 +389,77 @@ Lead Submitted
 
 ↓
 
-CRM
+Contacted
 
 ↓
 
-Sales Review
+Qualified
+
+↓
+
+Sales Opportunity
+```
+
+---
+
+## New Events
+
+Example:
+
+```
+lead_created
+
+↓
+
+lead_contacted
+
+↓
+
+qualified_lead
+```
+
+---
+
+## Skills Learned
+
+- CRM lifecycle tracking
+- Funnel stages
+- Lead quality measurement
+
+Difficulty:
+
+⭐⭐⭐
+
+---
+
+# Phase 7 — Offline Conversion Tracking
+
+## Goal
+
+Send business outcomes back to Google Ads.
+
+Current:
+
+```
+Website
+
+↓
+
+Lead
+```
+
+New:
+
+```
+Website
+
+↓
+
+Lead
+
+↓
+
+CRM
 
 ↓
 
@@ -393,7 +480,7 @@ Instead of optimizing for:
 generate_lead
 ```
 
-Google optimizes for:
+Google Ads learns:
 
 ```
 qualified_lead
@@ -403,22 +490,21 @@ qualified_lead
 
 ## Skills Learned
 
-- CRM lifecycle
 - Offline conversion imports
+- CRM integration
 - Sales pipeline tracking
-- Conversion quality optimization
 
 Difficulty:
 
-⭐⭐⭐
+⭐⭐⭐⭐
 
 ---
 
-# Phase 6 — Closed Deal Revenue Tracking
+# Phase 8 — Revenue Tracking
 
 ## Goal
 
-Connect advertising clicks to actual customers.
+Connect advertising clicks to actual customers and revenue.
 
 Pipeline:
 
@@ -431,7 +517,7 @@ Lead
 
 ↓
 
-Sales Call
+Sales Process
 
 ↓
 
@@ -468,7 +554,7 @@ Difficulty:
 
 ---
 
-# Phase 7 — Dynamic Revenue Optimization
+# Phase 9 — Value-Based Optimization
 
 ## Goal
 
@@ -496,11 +582,11 @@ Lead C = $20000
 
 Not:
 
-"Find more leads"
+> Find more leads
 
-but:
+But:
 
-"Find more valuable customers."
+> Find more valuable customers
 
 ---
 
@@ -508,7 +594,7 @@ but:
 
 - Value-based bidding
 - ROAS optimization
-- Revenue-based attribution
+- Revenue-based optimization
 
 Difficulty:
 
@@ -516,55 +602,28 @@ Difficulty:
 
 ---
 
-# Phase 8 — Multi-Stage Funnel Analytics
+# Phase 10 — Consent Management & Privacy Architecture
 
 ## Goal
 
-Understand the complete customer journey.
-
-Current:
-
-```
-lead
-```
-
-New:
-
-```
-lead_created
-
-↓
-
-qualified_lead
-
-↓
-
-demo_booked
-
-↓
-
-proposal_sent
-
-↓
-
-closed_won
-```
+Build a tracking system that respects user privacy requirements.
 
 ---
 
-## Questions Answered:
+## New Capabilities
 
-- Where do leads drop?
-- Which campaign creates qualified opportunities?
-- Which stage has the biggest loss?
+- Consent handling
+- Tracking permission states
+- Privacy-aware analytics
+- Consent Mode concepts
 
 ---
 
 ## Skills Learned
 
-- Funnel analytics
-- Lifecycle events
-- Marketing performance analysis
+- Privacy-first tracking
+- Consent architecture
+- Modern advertising measurement
 
 Difficulty:
 
@@ -572,11 +631,11 @@ Difficulty:
 
 ---
 
-# Phase 9 — Server-Side Tracking
+# Phase 11 — Server-Side Tracking
 
 ## Goal
 
-Reduce browser dependency.
+Reduce dependence on browser execution.
 
 Current:
 
@@ -612,21 +671,21 @@ Google
 
 ---
 
-## Benefits:
+## Benefits
 
-- More reliable delivery
-- Better control
+- More reliable event delivery
 - Backend validation
+- Better control
 - Stronger privacy model
 
 ---
 
-## Skills Learned:
+## Skills Learned
 
-- APIs
-- Authentication
+- Backend APIs
 - Server events
-- Backend tracking
+- Authentication
+- Event processing
 
 Difficulty:
 
@@ -634,11 +693,11 @@ Difficulty:
 
 ---
 
-# Phase 10 — Full CRM Attribution Platform
+# Phase 12 — Full CRM Attribution Platform
 
 ## Goal
 
-Build an agency-level attribution system.
+Build an agency-level marketing attribution system.
 
 Final architecture:
 
@@ -676,12 +735,13 @@ Google Ads
 
 ---
 
-## System Tracks:
+## System Tracks
 
 - Campaign performance
 - Keyword profitability
 - Lead quality
-- Sales revenue
+- Sales outcomes
+- Revenue attribution
 - Customer value
 
 Difficulty:
@@ -690,11 +750,11 @@ Difficulty:
 
 ---
 
-# Phase 11 — Marketing Data Warehouse
+# Phase 13 — Marketing Data Warehouse
 
 ## Goal
 
-Move from tracking to analytics infrastructure.
+Move from tracking individual conversions to analyzing marketing intelligence.
 
 Architecture:
 
@@ -715,25 +775,25 @@ Revenue Database
 
 ↓
 
-BigQuery
+Data Warehouse
 
 ↓
 
-Dashboard
+Dashboards
 ```
 
 ---
 
-## Questions Answered:
+## Questions Answered
 
-- Which keyword creates the highest revenue?
-- Which campaign has the best ROAS?
-- Which landing page produces the best customers?
-- Which sales process performs best?
+- Which keyword creates the most revenue?
+- Which campaign produces the best customers?
+- Which landing page performs best?
+- Which sales process converts better?
 
 ---
 
-## Skills Learned:
+## Skills Learned
 
 - Data engineering
 - SQL analytics
@@ -744,16 +804,18 @@ Difficulty:
 
 ⭐⭐⭐⭐⭐
 
+---
+
 # Final Learning Path
 
 ```
 Phase 1
-Browser Conversion Tracking ✅
+Browser Conversion Tracking
 
 ↓
 
 Phase 2
-CRM Lead Tracking
+Lead Capture + Database
 
 ↓
 
@@ -763,41 +825,51 @@ Attribution Capture
 ↓
 
 Phase 4
-Enhanced Conversions
+Google Tag Manager + Data Layer
 
 ↓
 
 Phase 5
-Qualified Lead Optimization
+Enhanced Conversions for Leads
 
 ↓
 
 Phase 6
-Revenue Tracking
+Qualified Lead Tracking
 
 ↓
 
 Phase 7
-Value-Based Optimization
+Offline Conversion Tracking
 
 ↓
 
 Phase 8
-Full Funnel Analytics
+Revenue Tracking
 
 ↓
 
 Phase 9
-Server-Side Tracking
+Value-Based Optimization
 
 ↓
 
 Phase 10
-CRM Attribution Platform
+Consent Management
 
 ↓
 
 Phase 11
+Server-Side Tracking
+
+↓
+
+Phase 12
+CRM Attribution Platform
+
+↓
+
+Phase 13
 Marketing Data Warehouse
 ```
 
@@ -820,7 +892,7 @@ Track a lead
 
 ↓
 
-Track a qualified opportunity
+Track lead quality
 
 ↓
 
@@ -828,7 +900,9 @@ Track revenue
 
 ↓
 
-Optimize advertising based on business value
+Optimize advertising using business value
 ```
 
-Phase 1 built the tracking foundation. The following phases transform it into a complete marketing attribution system.
+Phase 1 created the browser tracking foundation.
+
+The following phases transform it into a complete first-party marketing attribution platform capable of connecting advertising spend with real business outcomes.
