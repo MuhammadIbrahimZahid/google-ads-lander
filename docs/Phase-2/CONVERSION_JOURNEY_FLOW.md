@@ -1,1139 +1,289 @@
 # Conversion Journey Flow
 
-This document explains the complete conversion journey implemented in **Phase 2** of the project, including lead capture, API validation, database persistence, and conversion tracking behavior.
+This document describes the complete conversion journey implemented in **Phase 2**, including lead capture, server-side validation, database persistence, and Google Analytics 4 conversion tracking.
 
 ---
 
 # Purpose
 
-Phase 1 focused on creating and validating a browser-based conversion journey.
+Phase 2 extends the browser-based conversion journey by introducing:
 
-Phase 2 extends this system by adding:
-
-- Real lead collection
-- Server-side API handling
-- Request validation
+- Lead capture through a modal form
+- Server-side validation
 - Input sanitization
-- Database persistence
-- Neon PostgreSQL integration
+- Neon PostgreSQL persistence
+- Accurate GA4 conversion tracking
 
-The goal:
-
-> Allow only valid users to create leads in the database while keeping conversion tracking accurate and preventing invalid conversions.
-
-The system now has three connected layers:
-
-1. **Conversion Journey Tracking**
-
-Uses:
-
-```
-
-sessionStorage
-
-```
-
-Responsible for:
-
-- Creating conversion sessions
-- Validating conversion attempts
-- Preventing duplicate `generate_lead` events
-
-2. **Lead Capture System**
-
-Uses:
-
-```
-
-LeadForm.tsx
-/api/leads
-Neon PostgreSQL
-
-```
-
-Responsible for:
-
-- Collecting user information
-- Validating input
-- Saving valid leads
-
-3. **Analytics Conversion Tracking**
-
-Uses:
-
-```
-
-Google Analytics 4
-
-```
-
-Responsible for:
-
-- Measuring completed conversions
-- Sending `generate_lead`
+The objective is to ensure that only valid lead submissions are stored and counted as conversions.
 
 ---
 
-# High-Level Flow
+# Conversion Flow
 
 ```text
 User visits landing page
-
         │
-
         ▼
-
-Landing page renders
-
+Clicks "Get Started"
         │
-
         ▼
-
-User starts conversion journey
-
-        │
-
-        ▼
-
 ensureConversion()
-
         │
-
         ▼
-
-Create conversion record
-
+Create conversion object
 (sessionStorage)
-
         │
-
         ▼
-
 Track hero_cta_click
-
 (localStorage)
-
         │
-
         ▼
-
-User enters lead information
-
+Open Lead Modal
         │
-
         ▼
-
-LeadForm.tsx
-
+User submits form
         │
-
         ▼
-
 POST /api/leads
-
         │
-
-        ▼
-
-Validate request
-
-        │
-
         ├── Invalid
-
         │       │
-
         │       ▼
-
         │   Return 400
-
+        │   Keep modal open
         │   No database row
-
-        │   No conversion completion
-
-
         │
-
         └── Valid
-
                 │
-
                 ▼
-
-        Sanitize input
-
+        Insert lead into Neon
                 │
-
                 ▼
-
-        Create lead
-
+        completeConversion()
                 │
-
                 ▼
-
-        Neon PostgreSQL
-
-                │
-
-                ▼
-
         Redirect /thank-you
-
                 │
-
                 ▼
-
         Validate conversion
-
                 │
-
                 ▼
-
-        Send generate_lead
-
+        Track generate_lead
                 │
-
                 ▼
-
         consumeConversion()
-
-                │
-
-                ▼
-
-        Conversion completed
 ```
 
 ---
 
-# Phase 2 Architecture
-
-The application now has a frontend and backend flow.
+# Architecture
 
 ```text
 Browser
-
-↓
-
-React Component
-
-↓
-
-API Request
-
-↓
-
-Next.js Route Handler
-
-↓
-
+   │
+React Components
+   │
+Route Handler (/api/leads)
+   │
 Service Layer
-
-↓
-
-Database
-
-↓
-
-Response
-
-↓
-
-Conversion Tracking
+   │
+Neon PostgreSQL
+   │
+Google Analytics 4
 ```
 
-The API layer uses a Next.js App Router Route Handler:
-
-```
-src/app/api/leads/route.ts
-```
-
-Route Handlers are implemented using `route.ts` files inside the App Router and support request methods such as `POST`. ([Next.js][1])
+The backend uses a Next.js App Router Route Handler to process lead submissions. Route Handlers expose HTTP endpoints through `route.ts` files inside the `app` directory. :contentReference[oaicite:0]{index=0}
 
 ---
 
-# Project Responsibilities
+# Responsibilities
 
-## LeadForm.tsx
+## LeadModal
 
-File:
+Responsible for:
 
-```
-src/components/LeadForm.tsx
-```
+- Displaying the lead form
+- Opening after CTA click
+- Allowing users to close the modal
+
+## LeadForm
 
 Responsible for:
 
 - Managing form state
-- Collecting user input
-- Sending API request
-- Handling errors
-- Redirecting after success
+- Sending the API request
+- Handling validation errors
+- Completing the conversion after a successful insert
+- Redirecting to `/thank-you`
 
-It does not:
+## API Route
 
-- Validate database rules
-- Insert data directly
-- Manage database connections
+Responsible for:
 
----
+- Validating incoming requests
+- Sanitizing input
+- Calling the service layer
+- Returning success or validation errors
 
-# Lead Form Flow
+## Lead Service
 
-When the user submits the form:
+Responsible for:
 
-```text
-Submit button clicked
-
-        │
-
-        ▼
-
-handleSubmit()
-
-        │
-
-        ▼
-
-ensureConversion()
-
-        │
-
-        ▼
-
-Prepare lead payload
-
-        │
-
-        ▼
-
-POST /api/leads
-
-        │
-
-        ▼
-
-Wait for API response
-```
-
-The payload:
-
-```json
-{
-  "name": "John Smith",
-  "email": "john@test.com",
-  "phone": "03000000000",
-  "landingPage": "/",
-  "referrer": ""
-}
-```
+- Database operations only
+- Keeping SQL separate from API logic
 
 ---
 
-# API Endpoint
-
-File:
-
-```
-src/app/api/leads/route.ts
-```
-
-Purpose:
-
-Receive lead submissions from the browser.
-
-The endpoint:
-
-```
-POST /api/leads
-```
-
-handles:
-
-- Reading request body
-- Validating data
-- Calling lead service
-- Returning response
-
----
-
-# POST Request Lifecycle
-
-The API flow:
-
-```text
-Request received
-
-        │
-
-        ▼
-
-Parse JSON body
-
-        │
-
-        ▼
-
-Validate required fields
-
-        │
-
-        ▼
-
-Trim input values
-
-        │
-
-        ▼
-
-Create database record
-
-        │
-
-        ▼
-
-Return success response
-```
-
----
-
-# Request Validation
+# Validation
 
 The API validates:
 
-## Name
+- Name is required
+- Email is required
+- Email format
+- Maximum field lengths
+- Phone normalization
 
-Required:
+Invalid requests:
+
+- Return **400 Bad Request**
+- Do not insert a database row
+- Do not complete the conversion
+
+---
+
+# Conversion Lifecycle
+
+The conversion stored in `sessionStorage` moves through three states.
+
+### After CTA click
 
 ```text
-name cannot be empty
+started = true
+completed = false
+fired = false
 ```
 
-Invalid:
+### After successful lead creation
 
-```json
-{
-  "name": "   "
-}
+```text
+started = true
+completed = true
+fired = false
 ```
 
-Result:
+### After generate_lead
 
-```
-400 Bad Request
+```text
+started = true
+completed = true
+fired = true
 ```
 
 ---
 
-## Email
+# Thank You Page
 
-Required:
+The thank-you page verifies that:
 
-```text
-email must exist
-```
+- A conversion exists
+- It has been completed
+- It has not already fired
 
-Invalid:
+If any check fails, the user is redirected back to the homepage.
 
-```json
-{
-  "email": ""
-}
-```
-
-Result:
-
-```
-400 Bad Request
-```
-
----
-
-Invalid format:
-
-```json
-{
-  "email": "abc"
-}
-```
-
-Result:
-
-```
-400 Bad Request
-```
-
----
-
-# Input Sanitization
-
-Before saving:
+Otherwise:
 
 ```text
-User Input
-
-↓
-
-Trim whitespace
-
-↓
-
-Store clean data
-```
-
-Example:
-
-Input:
-
-```json
-{
-  "name": "   John Smith   ",
-  "phone": " 03000000000 "
-}
-```
-
-Stored:
-
-```json
-{
-  "name": "John Smith",
-  "phone": "03000000000"
-}
-```
-
-This prevents unnecessary whitespace from entering the database.
-
----
-
-# Invalid Request Handling
-
-Invalid requests stop immediately.
-
-Flow:
-
-```text
-Invalid payload
-
-↓
-
-Validation fails
-
-↓
-
-Return 400
-
-↓
-
-No database insert
-
-↓
-
-No redirect
-
-↓
-
-No generate_lead
-```
-
-Examples:
-
-- Empty name
-- Missing email
-- Invalid email format
-
----
-
-# Lead Service Layer
-
-File:
-
-```
-src/services/leads.ts
-```
-
-Purpose:
-
-Separate database operations from API logic.
-
-The API should not directly manage database queries.
-
-Architecture:
-
-```text
-route.ts
-
-↓
-
-services/leads.ts
-
-↓
-
-Database
-```
-
-Benefits:
-
-- Cleaner API routes
-- Reusable database functions
-- Easier future changes
-
----
-
-# Lead Types
-
-File:
-
-```
-src/types/lead.ts
-```
-
-Defines the shape of lead data.
-
-Example:
-
-```ts
-export interface CreateLeadInput {
-  name: string;
-  email: string;
-  phone?: string;
-  landingPage?: string;
-  referrer?: string;
-}
-```
-
-Purpose:
-
-Maintain consistency between:
-
-- React components
-- API requests
-- Database operations
-
----
-
-# Neon Database Flow
-
-Successful leads are stored in Neon PostgreSQL.
-
-Flow:
-
-```text
-Valid Lead
-
-↓
-
-Lead Service
-
-↓
-
-Database Insert
-
-↓
-
-Neon PostgreSQL
-
-↓
-
-Return Created Lead
-```
-
-Stored information includes:
-
-```text
-id
-
-name
-
-email
-
-phone
-
-landing_page
-
-referrer
-
-tracking fields
-```
-
----
-
-# Relationship Between Lead Creation and Conversion
-
-Lead creation and conversion tracking are separate systems.
-
-Lead creation answers:
-
-> Did the user provide valid information?
-
-Conversion tracking answers:
-
-> Did the user complete a valid conversion journey?
-
-The complete flow:
-
-```text
-User submits form
-
+Track generate_lead
         │
-
         ▼
-
-Lead saved
-
-        │
-
-        ▼
-
-Redirect /thank-you
-
-        │
-
-        ▼
-
-Conversion validated
-
-        │
-
-        ▼
-
-generate_lead sent
-```
-
-A database row alone does not create a conversion.
-
-The thank-you page remains responsible for conversion completion.
-
----
-
-# Thank You Page Flow
-
-The thank-you page checks:
-
-1. Does conversion exist?
-2. Is conversion valid?
-3. Has it already fired?
-
-Flow:
-
-```text
-Load /thank-you
-
-        │
-
-        ▼
-
-canConvert()
-
-        │
-
-        ├── false
-
-        │
-
-        ▼
-
-Redirect home
-
-
-        │
-
-        └── true
-
-                │
-
-                ▼
-
-        Check fired status
-
-                │
-
-                ▼
-
-        Track generate_lead
-
-                │
-
-                ▼
-
-        consumeConversion()
-```
-
----
-
-# Complete Phase 2 Conversion Pipeline
-
-```text
-User
-
-↓
-
-Landing Page
-
-↓
-
-Click CTA
-
-↓
-
-ensureConversion()
-
-↓
-
-sessionStorage created
-
-↓
-
-hero_cta_click tracked
-
-↓
-
-Lead Form
-
-↓
-
-Submit user information
-
-↓
-
-POST /api/leads
-
-↓
-
-Validate request
-
-↓
-
-Save Neon row
-
-↓
-
-Redirect /thank-you
-
-↓
-
-Validate conversion
-
-↓
-
-generate_lead
-
-↓
-
-Google Analytics
-
-↓
-
 consumeConversion()
-
-↓
-
-Conversion completed
 ```
+
+This guarantees a single `generate_lead` event per completed conversion.
 
 ---
 
 # User Scenarios
 
-## Scenario 1 — Empty Name
-
-Request:
-
-```json
-{
-  "name": "   ",
-  "email": "test@test.com"
-}
-```
-
-Result:
-
-```
-400 Bad Request
-```
-
-Database:
-
-```
-No row created
-```
-
-Conversion:
-
-```
-Not completed
-```
-
----
-
-# Scenario 2 — Missing Email
-
-Request:
-
-```json
-{
-  "name": "Test User"
-}
-```
-
-Result:
-
-```
-400 Bad Request
-```
-
-Database:
-
-```
-No row created
-```
-
----
-
-# Scenario 3 — Invalid Email
-
-Request:
-
-```json
-{
-  "name": "Test User",
-  "email": "abc"
-}
-```
-
-Result:
-
-```
-400 Bad Request
-```
-
-Database:
-
-```
-No row created
-```
-
----
-
-# Scenario 4 — Whitespace Trimming
-
-Request:
-
-```json
-{
-  "name": "   John Smith   ",
-  "email": "trim@test.com"
-}
-```
-
-Database:
+### Successful Conversion
 
 ```text
-name:
-
-John Smith
-```
-
-Result:
-
-```
-Successful lead creation
-```
-
----
-
-# Scenario 5 — Successful Submission
-
-Flow:
-
-```text
-User fills form
-
-↓
-
-POST /api/leads
-
-↓
-
-Validation passes
-
-↓
-
-Neon row created
-
-↓
-
+Click Get Started
+        │
+Open modal
+        │
+Submit valid form
+        │
+Lead stored
+        │
 Redirect /thank-you
-
-↓
-
-generate_lead fires
+        │
+generate_lead
 ```
 
-Result:
-
-```
-Lead stored successfully
-
-Conversion recorded
-```
-
----
-
-# Scenario 6 — Refresh Thank You Page
-
-First visit:
+### Invalid Submission
 
 ```text
+Submit invalid form
+        │
+Validation fails
+        │
+400 response
+        │
+No database row
+        │
+No generate_lead
+```
+
+### Close Modal
+
+```text
+Click Get Started
+        │
+Conversion starts
+        │
+Close modal
+        │
+No lead created
+        │
+Conversion expires after 30 minutes
+```
+
+### Refresh Thank You Page
+
+```text
+First visit
+        │
 generate_lead sent
-```
-
-Then:
-
-```json
-{
-  "fired": true
-}
-```
-
-Refresh:
-
-```
+        │
+Refresh
+        │
+Redirect home
+        │
 No duplicate conversion
 ```
 
----
+### Direct Visit to /thank-you
 
-# Scenario 7 — Direct Thank You Visit
-
-User opens:
-
-```
-/thank-you
-```
-
-without submitting a form.
-
-Storage:
-
-```
-sessionStorage empty
-```
-
-Result:
-
-```
+```text
+No active conversion
+        │
 Redirect home
 ```
 
-Reason:
-
-No valid conversion journey exists.
-
 ---
 
-# Design Principles
+# Summary
 
-## Separation of Responsibilities
+Phase 2 introduces a complete lead generation pipeline:
 
-The system separates:
-
-### Frontend
-
-Responsible for:
-
-- User interaction
-- Form collection
-- Navigation
-
-### API Layer
-
-Responsible for:
-
-- Validation
-- Request handling
-- Response formatting
-
-### Service Layer
-
-Responsible for:
-
-- Database operations
-
-### Analytics Layer
-
-Responsible for:
-
-- Sending conversion events
-
----
-
-# Final Mental Model
-
-Phase 1 created a conversion ticket.
-
-Phase 2 adds a lead record.
-
-The complete system:
-
-```text
-User
-
-↓
-
-Start journey
-
-↓
-
-Receive conversion ticket
-
-↓
-
-Submit information
-
-↓
-
-Create lead record
-
-↓
-
-Present conversion ticket
-
-↓
-
-Ticket accepted
-
-↓
-
-generate_lead
-
-↓
-
-Google Analytics
-```
-
-The database proves:
-
-```
-A user provided valid information
-```
-
-The conversion system proves:
-
-```
-The user completed a valid marketing journey
-```
-
-Together they create a realistic lead generation tracking system.
-
-Summary:
-
-- `LeadForm.tsx` collects user data.
-- `/api/leads` validates incoming requests.
-- `services/leads.ts` handles persistence logic.
-- Neon PostgreSQL stores valid leads.
-- Invalid requests never create database records.
-- `/thank-you` remains the conversion checkpoint.
-- `generate_lead` only fires after a valid conversion journey.
-
-Phase 2 transforms the project from a tracking demonstration into a complete lead capture and conversion tracking system.
+- CTA click starts a conversion journey.
+- A modal collects lead information.
+- `/api/leads` validates every request.
+- `services/leads.ts` persists valid leads in Neon PostgreSQL.
+- `completeConversion()` is called only after a successful database insert.
+- `/thank-you` is the conversion checkpoint.
+- `generate_lead` fires exactly once for each completed conversion.
+- Duplicate conversions are prevented through session-based state management.

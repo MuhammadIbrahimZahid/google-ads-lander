@@ -77,8 +77,10 @@ export default function LeadForm() {
   }
 
   return (
-    <section className="max-w-xl mx-auto mt-12 bg-white p-8 rounded-2xl shadow border">
-      <h2 className="text-2xl font-bold mb-6 text-center">Get Started</h2>
+    <section className="p-8">
+      <h2 className="text-2xl font-bold mb-6 text-center">
+        Complete Your Details
+      </h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <input

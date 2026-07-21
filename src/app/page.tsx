@@ -4,18 +4,15 @@ import { ensureConversion } from "@/lib/session";
 import { trackHeroCTAClick } from "@/lib/analytics";
 import { hasTrackedHeroClick, markHeroClickTracked } from "@/lib/tracking";
 import LeadForm from "@/components/LeadForm";
+import { useState } from "react";
+import LeadModal from "@/components/LeadModal";
 
 export default function Home() {
+  const [showForm, setShowForm] = useState(false);
+
   const handleClick = () => {
-    /**
-     * Phase 1 logic:
-     * Start conversion journey when user shows intent.
-     */
     ensureConversion();
 
-    /**
-     * Track CTA engagement once per browser.
-     */
     if (!hasTrackedHeroClick()) {
       trackHeroCTAClick({
         button_name: "Get Started",
@@ -24,21 +21,7 @@ export default function Home() {
       markHeroClickTracked();
     }
 
-    /**
-     * No redirect here.
-     *
-     * Phase 2 flow:
-     *
-     * CTA click
-     *     ↓
-     * conversion created
-     *     ↓
-     * user fills lead form
-     *     ↓
-     * lead stored
-     *     ↓
-     * thank-you page
-     */
+    setShowForm(true);
   };
 
   return (
@@ -110,7 +93,7 @@ export default function Home() {
         </button>
       </section>
 
-      <LeadForm />
+      <LeadModal open={showForm} onClose={() => setShowForm(false)} />
     </main>
   );
 }
