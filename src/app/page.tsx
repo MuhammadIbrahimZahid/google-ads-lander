@@ -1,16 +1,21 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { ensureConversion } from "@/lib/session";
 import { trackHeroCTAClick } from "@/lib/analytics";
 import { hasTrackedHeroClick, markHeroClickTracked } from "@/lib/tracking";
+import LeadForm from "@/components/LeadForm";
 
 export default function Home() {
-  const router = useRouter();
-
   const handleClick = () => {
+    /**
+     * Phase 1 logic:
+     * Start conversion journey when user shows intent.
+     */
     ensureConversion();
 
+    /**
+     * Track CTA engagement once per browser.
+     */
     if (!hasTrackedHeroClick()) {
       trackHeroCTAClick({
         button_name: "Get Started",
@@ -19,7 +24,21 @@ export default function Home() {
       markHeroClickTracked();
     }
 
-    router.push("/thank-you");
+    /**
+     * No redirect here.
+     *
+     * Phase 2 flow:
+     *
+     * CTA click
+     *     ↓
+     * conversion created
+     *     ↓
+     * user fills lead form
+     *     ↓
+     * lead stored
+     *     ↓
+     * thank-you page
+     */
   };
 
   return (
@@ -52,6 +71,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-8">
           <div className="bg-white p-6 rounded-xl shadow-sm">
             <h3 className="font-semibold text-lg">Conversion Tracking</h3>
+
             <p className="text-gray-600 mt-2">
               Learn how Google Ads tracks real user actions.
             </p>
@@ -59,6 +79,7 @@ export default function Home() {
 
           <div className="bg-white p-6 rounded-xl shadow-sm">
             <h3 className="font-semibold text-lg">GA4 Integration</h3>
+
             <p className="text-gray-600 mt-2">
               Understand analytics events and attribution.
             </p>
@@ -66,6 +87,7 @@ export default function Home() {
 
           <div className="bg-white p-6 rounded-xl shadow-sm">
             <h3 className="font-semibold text-lg">Tag Manager</h3>
+
             <p className="text-gray-600 mt-2">
               Manage all tracking without touching code later.
             </p>
@@ -80,13 +102,15 @@ export default function Home() {
         </h2>
 
         <p className="text-gray-600 mt-4">
-          Next step: we create a /thank-you page and start tracking conversions.
+          Submit your details below to complete the conversion journey.
         </p>
 
         <button className="mt-8 px-8 py-4 bg-black text-white rounded-xl">
           Continue Learning
         </button>
       </section>
+
+      <LeadForm />
     </main>
   );
 }

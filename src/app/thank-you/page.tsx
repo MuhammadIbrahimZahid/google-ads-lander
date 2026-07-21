@@ -2,9 +2,10 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+
 import { trackGenerateLead } from "@/lib/analytics";
 import { canConvert, consumeConversion, getConversion } from "@/lib/session";
-import { useRouter } from "next/navigation";
 
 export default function ThankYouPage() {
   const router = useRouter();
@@ -27,7 +28,17 @@ export default function ThankYouPage() {
       event_id: conversion.eventId,
     });
 
-    consumeConversion();
+    /**
+     * Allow GA4 event dispatch before
+     * marking the conversion as completed.
+     */
+    const timer = setTimeout(() => {
+      consumeConversion();
+    }, 300);
+
+    return () => {
+      clearTimeout(timer);
+    };
   }, [router]);
 
   return (
@@ -38,11 +49,11 @@ export default function ThankYouPage() {
         <h1 className="text-3xl font-bold text-gray-900">Thank You!</h1>
 
         <p className="mt-4 text-gray-600">
-          Your action has been recorded successfully.
+          Your lead has been submitted successfully.
         </p>
 
         <div className="mt-6 text-sm text-gray-500">
-          GA4 should now receive a <code>generate_lead</code> event.
+          GA4 has received a <code>generate_lead</code> event.
         </div>
 
         <Link

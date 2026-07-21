@@ -1,25 +1,5 @@
 import pool from "@/lib/db";
-
-export interface CreateLeadInput {
-  name: string;
-  email: string;
-  phone?: string | null;
-
-  landingPage?: string | null;
-  referrer?: string | null;
-
-  gclid?: string | null;
-
-  utmSource?: string | null;
-  utmMedium?: string | null;
-  utmCampaign?: string | null;
-  utmTerm?: string | null;
-  utmContent?: string | null;
-
-  debugSource?: string | null;
-  debugCampaign?: string | null;
-  debugClickId?: string | null;
-}
+import type { CreateLeadInput } from "@/types/lead";
 
 export async function createLead(data: CreateLeadInput) {
   const result = await pool.query(

@@ -50,9 +50,12 @@ export function getConversion(): Conversion | null {
 }
 
 /**
- * Ensure a conversion exists.
- * Reuses the current conversion if still valid,
- * otherwise creates a fresh one.
+ * Ensure a conversion journey exists.
+ *
+ * Called when user clicks the CTA.
+ *
+ * This only starts the journey.
+ * It does not mean a lead was created.
  */
 export function ensureConversion() {
   if (typeof window === "undefined") return;
@@ -65,7 +68,8 @@ export function ensureConversion() {
 
   const conversion: Conversion = {
     eventId: crypto.randomUUID(),
-    allowed: true,
+    started: true,
+    completed: false,
     fired: false,
     createdAt: Date.now(),
   };
@@ -74,8 +78,32 @@ export function ensureConversion() {
 }
 
 /**
- * Determine whether the current conversion
- * is eligible to be completed.
+ * Mark conversion as completed after
+ * successful lead database creation.
+ */
+export function completeConversion() {
+  if (typeof window === "undefined") return;
+
+  const conversion = readConversion();
+
+  if (!conversion) {
+    return;
+  }
+
+  conversion.completed = true;
+
+  saveConversion(conversion);
+}
+
+/**
+ * Determine whether generate_lead
+ * is allowed to fire.
+ *
+ * A conversion can only complete when:
+ *
+ * CTA started journey
+ * +
+ * Lead was successfully created
  */
 export function canConvert() {
   if (typeof window === "undefined") {
@@ -93,11 +121,12 @@ export function canConvert() {
     return false;
   }
 
-  return conversion.allowed;
+  return conversion.started && conversion.completed;
 }
 
 /**
- * Mark the current conversion as completed.
+ * Mark the current conversion as completed
+ * after generate_lead has been sent.
  */
 export function consumeConversion() {
   if (typeof window === "undefined") return;
