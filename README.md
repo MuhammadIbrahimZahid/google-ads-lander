@@ -1,38 +1,64 @@
 # Google Ads Lander — Phase 2
 
-A conversion-focused landing page system built with **Next.js**, **TypeScript**, **Google Analytics 4**, **Google Ads conversion tracking**, and **Neon PostgreSQL**.
+A production-oriented lead generation system built with **Next.js**, **TypeScript**, **Google Analytics 4**, **Google Ads**, and **Neon PostgreSQL**.
 
-This project demonstrates a complete lead generation pipeline:
+Phase 2 extends the browser-based conversion tracking foundation by introducing validated lead capture, server-side processing, and database persistence.
 
-```text
-Google Ad
-    ↓
-Landing Page
-    ↓
-CTA Interaction
-    ↓
-Conversion Journey Created
-    ↓
-Lead Form Submission
-    ↓
-Lead API Validation
-    ↓
-Neon PostgreSQL Storage
-    ↓
-Thank You Page
-    ↓
-generate_lead Event
-    ↓
-Google Analytics 4
-    ↓
-Google Ads Conversion Import
-```
-
-The purpose of Phase 2 is to connect measurable marketing conversions with real lead data storage.
+The project demonstrates how a marketing conversion becomes a real business lead.
 
 ---
 
-# Phase 2 Features
+# Conversion Journey
+
+```text
+Google Ad
+        │
+        ▼
+Landing Page
+        │
+        ▼
+Hero CTA Click
+        │
+        ▼
+Conversion Journey Created
+(sessionStorage)
+        │
+        ▼
+Lead Modal
+        │
+        ▼
+Lead Form Submission
+        │
+        ▼
+POST /api/leads
+        │
+        ▼
+Server Validation
+        │
+        ▼
+Neon PostgreSQL
+        │
+        ▼
+completeConversion()
+        │
+        ▼
+Thank You Page
+        │
+        ▼
+generate_lead
+        │
+        ▼
+Google Analytics 4
+        │
+        ▼
+Google Ads
+```
+
+The purpose of Phase 2 is to connect measurable marketing conversions with validated first-party lead data.
+
+---
+
+# Features
 
 Implemented:
 
@@ -42,17 +68,44 @@ Implemented:
 - Google Analytics 4 integration
 - Google Ads conversion workflow
 - Custom analytics events
-- Conversion state management
-- Session-based conversion tracking
+- Browser conversion journey
+- Session-based conversion management
+- Conversion expiry handling
 - Duplicate conversion prevention
-- CTA tracking
-- Lead capture form
-- API route handling
-- Server-side lead processing
-- Neon PostgreSQL database integration
-- Lead validation
-- Input trimming and normalization
-- Database persistence
+- Hero CTA tracking
+- Lead capture modal
+- API Route handling
+- Server-side validation
+- Input normalization
+- Neon PostgreSQL integration
+- Service layer architecture
+- Lead persistence
+- Thank-you page conversion validation
+
+---
+
+# Architecture
+
+```text
+Browser
+        │
+        ▼
+React Components
+        │
+        ▼
+Route Handler (/api/leads)
+        │
+        ▼
+Lead Service
+        │
+        ▼
+Neon PostgreSQL
+        │
+        ▼
+Google Analytics 4
+```
+
+Responsibilities are intentionally separated between presentation, business logic, persistence, and analytics.
 
 ---
 
@@ -62,15 +115,11 @@ The application tracks two custom GA4 events.
 
 ---
 
-# hero_cta_click
+## hero_cta_click
 
-Tracks user interaction with the primary call-to-action.
+Represents user intent.
 
-Triggered when the user clicks:
-
-```text
-Get Started
-```
+Triggered when the visitor clicks the primary CTA.
 
 Example:
 
@@ -83,38 +132,54 @@ trackHeroCTAClick({
 Purpose:
 
 - Measure landing page engagement
-- Understand CTA performance
-- Analyze user interaction
+- Measure CTA performance
+- Understand visitor intent
 
-This event is not considered a conversion.
+This event is **not** considered a conversion.
+
+To avoid inflated engagement metrics, it is tracked once per browser using `localStorage`.
 
 ---
 
-# generate_lead
+## generate_lead
 
-Represents a completed conversion journey.
+Represents a completed lead generation journey.
 
-Triggered after:
+Triggered only after:
 
 ```text
-Landing Page
-
-↓
 CTA Click
 
 ↓
-Conversion Created
+
+Conversion Journey Created
 
 ↓
+
 Lead Submitted
 
 ↓
+
+Server Validation
+
+↓
+
+Database Insert
+
+↓
+
+completeConversion()
+
+↓
+
 Thank You Page
 
 ↓
+
 Conversion Validation
 
 ↓
+
 generate_lead
 ```
 
@@ -130,14 +195,14 @@ trackGenerateLead({
 Purpose:
 
 - Represent successful lead generation
-- Act as a GA4 Key Event
+- Serve as a GA4 Key Event
 - Support Google Ads conversion imports
+
+The event is fired exactly once for each completed conversion journey.
 
 ---
 
-# Lead Capture Architecture
-
-The lead flow:
+# Lead Capture Pipeline
 
 ```text
 LeadForm.tsx
@@ -152,7 +217,11 @@ route.ts
 
 ↓
 
-createLead()
+Validation
+
+↓
+
+Lead Service
 
 ↓
 
@@ -164,12 +233,18 @@ Success Response
 
 ↓
 
+completeConversion()
+
+↓
+
 Thank You Page
 ```
 
+Only successful database inserts complete the conversion journey.
+
 ---
 
-# Lead API
+# API
 
 Endpoint:
 
@@ -177,25 +252,55 @@ Endpoint:
 POST /api/leads
 ```
 
-Location:
+Responsibilities:
 
-```text
-src/app/api/leads/route.ts
-```
-
-The API handles:
-
-- Request parsing
-- Required field validation
-- Lead creation
-- Error handling
-- Database communication
+- Parse request body
+- Validate required fields
+- Normalize input
+- Call service layer
+- Return success or validation errors
 
 ---
 
-# Lead Data Stored
+# Validation
 
-The system stores:
+The API validates:
+
+- Required name
+- Required email
+- Email format
+- Maximum field lengths
+- Phone normalization
+
+Invalid requests:
+
+- Return **400 Bad Request**
+- Do not insert a lead
+- Do not complete the conversion
+- Do not fire `generate_lead`
+
+---
+
+# Lead Service
+
+Location:
+
+```text
+src/services/leads.ts
+```
+
+Responsibilities:
+
+- Execute SQL queries
+- Insert leads
+- Keep persistence separate from API logic
+- Return the created lead
+
+---
+
+# Lead Data
+
+Each lead stores:
 
 ```text
 name
@@ -218,189 +323,80 @@ debug_campaign
 debug_click_id
 ```
 
----
-
-# Database
-
-Database:
-
-```text
-Neon PostgreSQL
-```
-
-Lead storage is handled through:
-
-```text
-src/services/leads.ts
-```
-
-Responsibilities:
-
-- Insert lead records
-- Handle nullable values
-- Return created lead data
+This data forms the foundation for future attribution and marketing analysis.
 
 ---
 
-# Input Validation
+# Conversion Lifecycle
 
-The application validates:
+A conversion journey progresses through three states.
 
-## Required fields
-
-Required:
+## Journey Started
 
 ```text
-name
-email
-```
-
-Invalid requests return:
-
-```text
-400 Bad Request
+started = true
+completed = false
+fired = false
 ```
 
 ---
 
-## Email Validation
-
-Invalid emails are rejected:
-
-Example:
+## Lead Created
 
 ```text
-abc
-```
-
-Result:
-
-```text
-400 Bad Request
+started = true
+completed = true
+fired = false
 ```
 
 ---
 
-## Data Normalization
-
-Input values are cleaned before storage.
-
-Example:
-
-Input:
+## Analytics Completed
 
 ```text
-"   John Smith   "
-```
-
-Stored:
-
-```text
-"John Smith"
-```
-
-Phone values are also normalized.
-
----
-
-# Conversion Tracking Architecture
-
-Analytics responsibilities are separated:
-
-```text
-React Component
-
-↓
-
-Analytics Helper
-
-↓
-
-gtag Wrapper
-
-↓
-
-window.gtag()
-
-↓
-
-Google Analytics 4
-```
-
-Conversion state is managed separately:
-
-```text
-User Click
-
-↓
-
-ensureConversion()
-
-↓
-
-sessionStorage
-
-↓
-
-Lead Submission
-
-↓
-
-Thank You Page
-
-↓
-
-Validation
-
-↓
-
-generate_lead
-
-↓
-
-consumeConversion()
+started = true
+completed = true
+fired = true
 ```
 
 ---
 
-# Storage Usage
+# Browser Storage
 
-The project uses two browser storage systems.
+The project intentionally uses two browser storage mechanisms.
 
 ---
 
-# sessionStorage
+## sessionStorage
 
-Used for active conversion journeys.
+Stores the active conversion journey.
 
 Example:
 
 ```json
 {
   "eventId": "abc123",
-  "allowed": true,
+  "started": true,
+  "completed": false,
   "fired": false,
   "createdAt": 1750000000
 }
 ```
 
-Stores:
-
-- Conversion identifier
-- Conversion status
-- Creation timestamp
-
 Used for:
 
-- Maintaining conversion state
-- Preventing duplicate conversions
-- Expiring old conversion attempts
+- Conversion state
+- Event deduplication
+- Thank-you page validation
+- Conversion expiry
+
+Conversion journeys automatically expire after **30 minutes**.
 
 ---
 
-# localStorage
+## localStorage
 
-Used for browser-level tracking locks.
+Stores browser-level tracking information.
 
 Example:
 
@@ -410,8 +406,8 @@ hero_click_fired = 1
 
 Used for:
 
-- Preventing repeated CTA click events
-- Persisting tracking information
+- Preventing repeated `hero_cta_click`
+- Persisting CTA tracking across reloads
 
 ---
 
@@ -424,14 +420,15 @@ src/
 │   │   └── leads/
 │   │       └── route.ts
 │   │
-│   ├── layout.tsx
-│   ├── page.tsx
+│   ├── thank-you/
+│   │   └── page.tsx
 │   │
-│   └── thank-you/
-│       └── page.tsx
+│   ├── layout.tsx
+│   └── page.tsx
 │
 ├── components/
-│   └── LeadForm.tsx
+│   ├── LeadForm.tsx
+│   └── LeadModal.tsx
 │
 ├── constants/
 │   └── analytics.ts
@@ -497,9 +494,9 @@ http://localhost:3000
 
 ---
 
-# Production Build
+# Production
 
-Create production build:
+Build:
 
 ```bash
 npm run build
@@ -513,38 +510,40 @@ npm start
 
 ---
 
-# Testing Completed
+# Testing
 
 Verified:
 
-## API Validation
+### API Validation
 
-✅ Empty name rejected
-✅ Missing email rejected
-✅ Invalid email rejected
+- ✅ Required field validation
+- ✅ Email validation
+- ✅ Maximum field validation
 
-## Data Processing
+### Input Processing
 
-✅ Name trimming
-✅ Phone normalization
+- ✅ Name trimming
+- ✅ Email normalization
+- ✅ Phone normalization
 
-## Lead Creation
+### Lead Processing
 
-✅ Browser submission
-✅ API success response
-✅ Neon database insert
+- ✅ Browser submission
+- ✅ API validation
+- ✅ Database persistence
+- ✅ Service layer
 
-## Conversion Tracking
+### Conversion Tracking
 
-✅ Thank you page redirect
-✅ generate_lead event firing
-✅ Duplicate conversion protection
+- ✅ Conversion journey creation
+- ✅ Thank-you page validation
+- ✅ Single `generate_lead` event
+- ✅ Duplicate conversion prevention
+- ✅ Conversion expiry handling
 
 ---
 
 # Google Ads Integration
-
-Workflow:
 
 ```text
 Google Analytics 4
@@ -562,7 +561,7 @@ Google Ads Import
 Conversion Action
 ```
 
-Conversion action configuration:
+Recommended Google Ads configuration:
 
 ```text
 Event:
@@ -575,22 +574,46 @@ Source:
 Google Analytics 4
 ```
 
-Google Ads attribution depends on valid Google Ads traffic and imported conversion data.
+Only validated and successfully stored leads become Google Ads conversions.
 
 ---
 
-# Phase 2 Completion Status
+# Future Roadmap
+
+Phase 2 establishes the foundation for a complete first-party marketing attribution platform.
+
+Future phases introduce:
+
+- Attribution capture
+- Google Tag Manager
+- Enhanced Conversions for Leads
+- Qualified lead tracking
+- Offline conversions
+- Revenue attribution
+- Value-based bidding
+- Consent management
+- Server-side tracking
+- CRM integration
+- Marketing intelligence
+
+See **future.md** for the complete roadmap.
+
+---
+
+# Phase 2 Completion
 
 The project currently demonstrates:
 
-✅ Landing page conversion tracking
-✅ GA4 event tracking
-✅ Google Ads conversion workflow
-✅ Conversion validation
-✅ Duplicate prevention
-✅ Lead form capture
-✅ API-based lead processing
-✅ Neon PostgreSQL storage
-✅ Lead validation
-✅ Input normalization
-✅ End-to-end conversion pipeline
+- ✅ Browser conversion journey
+- ✅ Lead capture
+- ✅ Server-side validation
+- ✅ API Route handling
+- ✅ Neon PostgreSQL persistence
+- ✅ Service layer architecture
+- ✅ Google Analytics 4 integration
+- ✅ Google Ads conversion workflow
+- ✅ Session-based conversion management
+- ✅ Duplicate conversion prevention
+- ✅ End-to-end lead generation pipeline
+
+Phase 2 provides the foundation for future attribution, CRM integration, offline conversion tracking, and revenue measurement.
