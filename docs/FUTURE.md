@@ -181,13 +181,13 @@ Understand exactly where every lead originated.
 
 Instead of:
 
-```
+```text
 John submitted a form
 ```
 
 The system understands:
 
-```
+```text
 John submitted a form
 
 Source:
@@ -216,12 +216,13 @@ xxxxx
 - Referrer
 - Device information
 - Landing page
+- Conversion event ID
 
 ---
 
 ## Architecture
 
-```
+```text
 Google Ad
 
 ↓
@@ -231,6 +232,10 @@ Landing Page
 ↓
 
 Capture Attribution
+
+↓
+
+Attach Attribution to Conversion Journey
 
 ↓
 
@@ -248,6 +253,7 @@ CRM Record
 - Marketing attribution
 - URL parameter handling
 - First-party tracking
+- Attribution persistence
 
 Difficulty:
 
@@ -263,7 +269,7 @@ Move tracking management from application code into an industry-standard tag man
 
 Current:
 
-```
+```text
 Next.js
 
 ↓
@@ -277,7 +283,7 @@ GA4
 
 New:
 
-```
+```text
 Next.js
 
 ↓
@@ -296,6 +302,8 @@ GA4
 
 Google Ads
 ```
+
+The business events remain the same. Only the event delivery mechanism changes.
 
 ---
 
@@ -325,11 +333,11 @@ Difficulty:
 
 ## Goal
 
-Improve Google Ads conversion matching using first-party customer information.
+Improve Google Ads conversion matching using first-party customer information collected during lead creation.
 
 Current:
 
-```
+```text
 Conversion
 
 ↓
@@ -339,7 +347,7 @@ event_id
 
 New:
 
-```
+```text
 Lead Data
 
 ↓
@@ -378,14 +386,18 @@ Teach the system that not every lead has equal value.
 
 Current:
 
-```
+```text
 Lead Submitted
 ```
 
 New:
 
-```
+```text
 Lead Submitted
+
+↓
+
+CRM
 
 ↓
 
@@ -406,7 +418,7 @@ Sales Opportunity
 
 Example:
 
-```
+```text
 lead_created
 
 ↓
@@ -440,7 +452,7 @@ Send business outcomes back to Google Ads.
 
 Current:
 
-```
+```text
 Website
 
 ↓
@@ -450,7 +462,7 @@ Lead
 
 New:
 
-```
+```text
 Website
 
 ↓
@@ -470,19 +482,23 @@ Qualified Lead
 Google Ads
 ```
 
+Website events measure lead generation.
+
+Offline conversions measure business outcomes.
+
 ---
 
 ## Example
 
 Instead of optimizing for:
 
-```
+```text
 generate_lead
 ```
 
 Google Ads learns:
 
-```
+```text
 qualified_lead
 ```
 
@@ -508,7 +524,7 @@ Connect advertising clicks to actual customers and revenue.
 
 Pipeline:
 
-```
+```text
 Google Ad
 
 ↓
@@ -534,7 +550,7 @@ Revenue
 
 Example:
 
-```
+```text
 purchase
 
 value: 5000 USD
@@ -562,13 +578,13 @@ Stop treating every conversion equally.
 
 Before:
 
-```
+```text
 Every lead = 1
 ```
 
 After:
 
-```
+```text
 Lead A = $100
 
 Lead B = $5000
@@ -578,7 +594,7 @@ Lead C = $20000
 
 ---
 
-## Google Ads learns:
+## Google Ads learns
 
 Not:
 
@@ -615,7 +631,7 @@ Build a tracking system that respects user privacy requirements.
 - Consent handling
 - Tracking permission states
 - Privacy-aware analytics
-- Consent Mode concepts
+- Consent Mode v2 concepts
 
 ---
 
@@ -639,7 +655,7 @@ Reduce dependence on browser execution.
 
 Current:
 
-```
+```text
 Browser
 
 ↓
@@ -653,7 +669,7 @@ Google
 
 New:
 
-```
+```text
 Browser
 
 ↓
@@ -666,7 +682,11 @@ Server
 
 ↓
 
-Google
+Measurement Protocol
+
+↓
+
+GA4 / Google Ads
 ```
 
 ---
@@ -686,6 +706,7 @@ Google
 - Server events
 - Authentication
 - Event processing
+- Measurement Protocol
 
 Difficulty:
 
@@ -701,12 +722,16 @@ Build an agency-level marketing attribution system.
 
 Final architecture:
 
-```
+```text
 Google Ads
 
 ↓
 
 Landing Page
+
+↓
+
+Conversion Journey
 
 ↓
 
@@ -742,7 +767,7 @@ Google Ads
 - Lead quality
 - Sales outcomes
 - Revenue attribution
-- Customer value
+- Customer lifetime value
 
 Difficulty:
 
@@ -750,7 +775,7 @@ Difficulty:
 
 ---
 
-# Phase 13 — Marketing Data Warehouse
+# Phase 13 — Marketing Intelligence & Data Warehouse
 
 ## Goal
 
@@ -758,7 +783,7 @@ Move from tracking individual conversions to analyzing marketing intelligence.
 
 Architecture:
 
-```
+```text
 Google Ads
 
 ↓
@@ -808,7 +833,7 @@ Difficulty:
 
 # Final Learning Path
 
-```
+```text
 Phase 1
 Browser Conversion Tracking
 
@@ -870,12 +895,46 @@ CRM Attribution Platform
 ↓
 
 Phase 13
-Marketing Data Warehouse
+Marketing Intelligence & Data Warehouse
 ```
+
+---
+
+## Evolution of the Conversion Journey
+
+```text
+Click
+
+↓
+
+Conversion Journey
+
+↓
+
+Lead
+
+↓
+
+Qualified Lead
+
+↓
+
+Customer
+
+↓
+
+Revenue
+
+↓
+
+Marketing Intelligence
+```
+
+---
 
 The progression is:
 
-```
+```text
 Track a click
 
 ↓
@@ -901,8 +960,14 @@ Track revenue
 ↓
 
 Optimize advertising using business value
+
+↓
+
+Build marketing intelligence
 ```
 
-Phase 1 created the browser tracking foundation.
+Phase 1 established the browser-based tracking foundation.
 
-The following phases transform it into a complete first-party marketing attribution platform capable of connecting advertising spend with real business outcomes.
+Phase 2 introduced validated lead capture and first-party data storage.
+
+The remaining phases evolve the same conversion journey into a complete first-party marketing attribution platform capable of connecting advertising spend with qualified leads, customers, revenue, and long-term business value.
