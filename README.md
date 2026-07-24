@@ -1,10 +1,8 @@
-# Google Ads Lander — Phase 2
+# Google Ads Lander — Phase 3
 
-A production-oriented lead generation system built with **Next.js**, **TypeScript**, **Google Analytics 4**, **Google Ads**, and **Neon PostgreSQL**.
+A production-oriented lead generation and attribution system built with **Next.js**, **TypeScript**, **Google Analytics 4**, **Google Ads**, and **Neon PostgreSQL**.
 
-Phase 2 extends the browser-based conversion tracking foundation by introducing validated lead capture, server-side processing, and database persistence.
-
-The project demonstrates how a marketing conversion becomes a real business lead.
+Phase 3 extends the lead capture platform by introducing automatic attribution capture and persistent conversion context. Marketing attribution is collected when a visitor lands on the site, attached to the conversion journey, stored with each lead, and reused throughout the entire conversion lifecycle.
 
 ---
 
@@ -17,11 +15,15 @@ Google Ad
 Landing Page
         │
         ▼
+Capture Attribution
+(sessionStorage)
+        │
+        ▼
 Hero CTA Click
         │
         ▼
 Conversion Journey Created
-(sessionStorage)
+(event_id + attribution)
         │
         ▼
 Lead Modal
@@ -46,6 +48,7 @@ Thank You Page
         │
         ▼
 generate_lead
+(event_id)
         │
         ▼
 Google Analytics 4
@@ -54,7 +57,7 @@ Google Analytics 4
 Google Ads
 ```
 
-The purpose of Phase 2 is to connect measurable marketing conversions with validated first-party lead data.
+Phase 3 ensures that marketing attribution is captured immediately when a visitor lands on the page and remains available throughout the complete lead generation journey.
 
 ---
 
@@ -68,18 +71,23 @@ Implemented:
 - Google Analytics 4 integration
 - Google Ads conversion workflow
 - Custom analytics events
-- Browser conversion journey
 - Session-based conversion management
 - Conversion expiry handling
 - Duplicate conversion prevention
 - Hero CTA tracking
+- Automatic attribution capture
+- First-touch attribution support
 - Lead capture modal
 - API Route handling
 - Server-side validation
 - Input normalization
 - Neon PostgreSQL integration
 - Service layer architecture
-- Lead persistence
+- Device tracking
+- Conversion Event ID persistence
+- Landing page attribution
+- UTM parameter tracking
+- GCLID capture
 - Thank-you page conversion validation
 
 ---
@@ -88,6 +96,12 @@ Implemented:
 
 ```text
 Browser
+        │
+        ▼
+Attribution Capture
+        │
+        ▼
+Conversion Journey
         │
         ▼
 React Components
@@ -105,115 +119,143 @@ Neon PostgreSQL
 Google Analytics 4
 ```
 
-Responsibilities are intentionally separated between presentation, business logic, persistence, and analytics.
+Each layer has a single responsibility:
+
+- Attribution collection
+- Conversion management
+- User interface
+- API validation
+- Database persistence
+- Analytics
 
 ---
 
-# Conversion Events
+# Attribution Flow
 
-The application tracks two custom GA4 events.
+Marketing attribution is captured automatically on the landing page.
+
+```text
+Landing Page
+
+↓
+
+captureAttribution()
+
+↓
+
+sessionStorage
+
+↓
+
+ensureConversion()
+
+↓
+
+Conversion Object
+
+↓
+
+Lead Submission
+
+↓
+
+Database
+```
+
+The visitor does not need to submit the form immediately. Attribution is preserved for the active conversion journey.
 
 ---
 
-## hero_cta_click
+# Conversion Journey
 
-Represents user intent.
-
-Triggered when the visitor clicks the primary CTA.
+The conversion object now contains both conversion state and attribution.
 
 Example:
 
-```ts
-trackHeroCTAClick({
-  button_name: "Get Started",
-});
+```json
+{
+  "eventId": "921d8c5e-c124-4d2d-9587-427cb7d49bb6",
+  "started": true,
+  "completed": false,
+  "fired": false,
+  "createdAt": 1750000000,
+  "attribution": {
+    "gclid": "test123",
+    "utmSource": "google",
+    "utmMedium": "cpc",
+    "utmCampaign": "summer_sale",
+    "landingPage": "/",
+    "device": "Mozilla/5.0..."
+  }
+}
 ```
 
-Purpose:
-
-- Measure landing page engagement
-- Measure CTA performance
-- Understand visitor intent
-
-This event is **not** considered a conversion.
-
-To avoid inflated engagement metrics, it is tracked once per browser using `localStorage`.
+This makes the conversion journey the single source of truth for attribution data.
 
 ---
 
-## generate_lead
+# Browser Storage
 
-Represents a completed lead generation journey.
+## sessionStorage
 
-Triggered only after:
+Stores:
+
+- Active conversion journey
+- Attribution
+- Conversion state
+- Event ID
+- Conversion expiry
+
+Example:
 
 ```text
+conversion
+attribution
+```
+
+Conversion journeys automatically expire after **30 minutes**.
+
+---
+
+## localStorage
+
+Stores browser-level information that should survive browser sessions.
+
+Current usage:
+
+```text
+hero_click_fired
+first_touch_attribution
+```
+
+The first-touch attribution record is only written once and is never overwritten.
+
+---
+
+# Lead Pipeline
+
+```text
+Landing Page
+
+↓
+
+Capture Attribution
+
+↓
+
 CTA Click
 
 ↓
 
-Conversion Journey Created
+Conversion Created
 
 ↓
 
-Lead Submitted
-
-↓
-
-Server Validation
-
-↓
-
-Database Insert
-
-↓
-
-completeConversion()
-
-↓
-
-Thank You Page
-
-↓
-
-Conversion Validation
-
-↓
-
-generate_lead
-```
-
-Example:
-
-```ts
-trackGenerateLead({
-  lead_source: "landing_page",
-  event_id: conversion.eventId,
-});
-```
-
-Purpose:
-
-- Represent successful lead generation
-- Serve as a GA4 Key Event
-- Support Google Ads conversion imports
-
-The event is fired exactly once for each completed conversion journey.
-
----
-
-# Lead Capture Pipeline
-
-```text
-LeadForm.tsx
+Lead Form
 
 ↓
 
 POST /api/leads
-
-↓
-
-route.ts
 
 ↓
 
@@ -229,7 +271,85 @@ Neon PostgreSQL
 
 ↓
 
-Success Response
+completeConversion()
+
+↓
+
+Thank You Page
+
+↓
+
+generate_lead
+```
+
+Lead submission no longer reads browser APIs directly. Instead, attribution is retrieved from the active conversion journey.
+
+---
+
+# Attribution Fields
+
+Each lead stores marketing context including:
+
+```text
+landing_page
+
+referrer
+
+gclid
+
+utm_source
+
+utm_medium
+
+utm_campaign
+
+utm_term
+
+utm_content
+
+device
+
+event_id
+```
+
+These fields connect every lead to its originating marketing campaign.
+
+---
+
+# Conversion Events
+
+## hero_cta_click
+
+Represents visitor engagement.
+
+Tracked once per browser using `localStorage`.
+
+Example:
+
+```ts
+trackHeroCTAClick({
+  button_name: "Get Started",
+});
+```
+
+---
+
+## generate_lead
+
+Represents a completed conversion.
+
+Triggered only after:
+
+```text
+Attribution Captured
+
+↓
+
+Conversion Created
+
+↓
+
+Lead Stored
 
 ↓
 
@@ -238,9 +358,22 @@ completeConversion()
 ↓
 
 Thank You Page
+
+↓
+
+generate_lead(event_id)
 ```
 
-Only successful database inserts complete the conversion journey.
+Example:
+
+```ts
+trackGenerateLead({
+  lead_source: "landing_page",
+  event_id: conversion.eventId,
+});
+```
+
+The `event_id` links analytics events with the stored lead.
 
 ---
 
@@ -257,8 +390,12 @@ Responsibilities:
 - Parse request body
 - Validate required fields
 - Normalize input
+- Persist attribution
+- Persist conversion event ID
 - Call service layer
-- Return success or validation errors
+- Return structured responses
+
+The API is implemented using Next.js App Router Route Handlers, which provide custom HTTP endpoints inside the `app` directory. :contentReference[oaicite:0]{index=0}
 
 ---
 
@@ -281,133 +418,41 @@ Invalid requests:
 
 ---
 
-# Lead Service
+# Database
 
-Location:
-
-```text
-src/services/leads.ts
-```
-
-Responsibilities:
-
-- Execute SQL queries
-- Insert leads
-- Keep persistence separate from API logic
-- Return the created lead
-
----
-
-# Lead Data
-
-Each lead stores:
+Each stored lead contains:
 
 ```text
+Customer
+
 name
 email
 phone
 
+Marketing Attribution
+
 landing_page
 referrer
-
 gclid
-
 utm_source
 utm_medium
 utm_campaign
 utm_term
 utm_content
 
+Conversion
+
+device
+event_id
+
+Development
+
 debug_source
 debug_campaign
 debug_click_id
 ```
 
-This data forms the foundation for future attribution and marketing analysis.
-
----
-
-# Conversion Lifecycle
-
-A conversion journey progresses through three states.
-
-## Journey Started
-
-```text
-started = true
-completed = false
-fired = false
-```
-
----
-
-## Lead Created
-
-```text
-started = true
-completed = true
-fired = false
-```
-
----
-
-## Analytics Completed
-
-```text
-started = true
-completed = true
-fired = true
-```
-
----
-
-# Browser Storage
-
-The project intentionally uses two browser storage mechanisms.
-
----
-
-## sessionStorage
-
-Stores the active conversion journey.
-
-Example:
-
-```json
-{
-  "eventId": "abc123",
-  "started": true,
-  "completed": false,
-  "fired": false,
-  "createdAt": 1750000000
-}
-```
-
-Used for:
-
-- Conversion state
-- Event deduplication
-- Thank-you page validation
-- Conversion expiry
-
-Conversion journeys automatically expire after **30 minutes**.
-
----
-
-## localStorage
-
-Stores browser-level tracking information.
-
-Example:
-
-```text
-hero_click_fired = 1
-```
-
-Used for:
-
-- Preventing repeated `hero_cta_click`
-- Persisting CTA tracking across reloads
+This schema supports campaign analysis, attribution reporting, and future offline conversion workflows.
 
 ---
 
@@ -430,11 +475,10 @@ src/
 │   ├── LeadForm.tsx
 │   └── LeadModal.tsx
 │
-├── constants/
-│   └── analytics.ts
-│
 ├── lib/
 │   ├── analytics.ts
+│   ├── attribution.ts
+│   ├── firstTouchAttribution.ts
 │   ├── db.ts
 │   ├── gtag.ts
 │   ├── session.ts
@@ -445,6 +489,7 @@ src/
 │
 └── types/
     ├── analytics.ts
+    ├── attribution.ts
     ├── lead.ts
     └── session.ts
 ```
@@ -470,8 +515,6 @@ DATABASE_URL=your_neon_connection_string
 
 # Installation
 
-Install dependencies:
-
 ```bash
 npm install
 ```
@@ -479,8 +522,6 @@ npm install
 ---
 
 # Development
-
-Run:
 
 ```bash
 npm run dev
@@ -496,15 +537,8 @@ http://localhost:3000
 
 # Production
 
-Build:
-
 ```bash
 npm run build
-```
-
-Start:
-
-```bash
 npm start
 ```
 
@@ -514,32 +548,30 @@ npm start
 
 Verified:
 
-### API Validation
+### Attribution
 
-- ✅ Required field validation
-- ✅ Email validation
-- ✅ Maximum field validation
-
-### Input Processing
-
-- ✅ Name trimming
-- ✅ Email normalization
-- ✅ Phone normalization
+- ✅ Automatic landing-page attribution capture
+- ✅ UTM persistence
+- ✅ GCLID capture
+- ✅ Device capture
+- ✅ First-touch attribution
+- ✅ Attribution attached to conversion journey
 
 ### Lead Processing
 
 - ✅ Browser submission
 - ✅ API validation
 - ✅ Database persistence
-- ✅ Service layer
+- ✅ Event ID persistence
+- ✅ Attribution persistence
 
 ### Conversion Tracking
 
 - ✅ Conversion journey creation
-- ✅ Thank-you page validation
-- ✅ Single `generate_lead` event
+- ✅ Single `generate_lead`
 - ✅ Duplicate conversion prevention
-- ✅ Conversion expiry handling
+- ✅ Conversion expiry
+- ✅ Event ID consistency between analytics and database
 
 ---
 
@@ -550,7 +582,7 @@ Google Analytics 4
 
 ↓
 
-generate_lead Key Event
+generate_lead
 
 ↓
 
@@ -561,7 +593,7 @@ Google Ads Import
 Conversion Action
 ```
 
-Recommended Google Ads configuration:
+Recommended configuration:
 
 ```text
 Event:
@@ -574,46 +606,45 @@ Source:
 Google Analytics 4
 ```
 
-Only validated and successfully stored leads become Google Ads conversions.
+Only validated leads successfully stored in the database become Google Ads conversions.
 
 ---
 
 # Future Roadmap
 
-Phase 2 establishes the foundation for a complete first-party marketing attribution platform.
+Upcoming phases include:
 
-Future phases introduce:
-
-- Attribution capture
-- Google Tag Manager
+- Google Tag Manager integration
 - Enhanced Conversions for Leads
+- Offline conversion imports
+- CRM synchronization
 - Qualified lead tracking
-- Offline conversions
 - Revenue attribution
-- Value-based bidding
-- Consent management
 - Server-side tracking
-- CRM integration
-- Marketing intelligence
+- Consent management
+- Marketing intelligence dashboards
 
 See **future.md** for the complete roadmap.
 
 ---
 
-# Phase 2 Completion
+# Phase 3 Completion
 
-The project currently demonstrates:
+Phase 3 introduces a complete attribution-aware conversion pipeline.
 
-- ✅ Browser conversion journey
-- ✅ Lead capture
-- ✅ Server-side validation
-- ✅ API Route handling
-- ✅ Neon PostgreSQL persistence
+Implemented:
+
+- ✅ Automatic attribution capture
+- ✅ First-touch attribution storage
+- ✅ Attribution attached to conversion journeys
+- ✅ Session-based attribution persistence
+- ✅ Device tracking
+- ✅ Event ID persistence
+- ✅ Database attribution storage
+- ✅ Lead validation
 - ✅ Service layer architecture
 - ✅ Google Analytics 4 integration
 - ✅ Google Ads conversion workflow
-- ✅ Session-based conversion management
-- ✅ Duplicate conversion prevention
-- ✅ End-to-end lead generation pipeline
+- ✅ End-to-end attribution-aware lead generation
 
-Phase 2 provides the foundation for future attribution, CRM integration, offline conversion tracking, and revenue measurement.
+Phase 3 transforms the project into an attribution-ready marketing platform where every validated lead is connected to the campaign, landing page, device, and conversion journey that generated it.
