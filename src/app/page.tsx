@@ -3,12 +3,23 @@
 import { ensureConversion } from "@/lib/session";
 import { trackHeroCTAClick } from "@/lib/analytics";
 import { hasTrackedHeroClick, markHeroClickTracked } from "@/lib/tracking";
-import LeadForm from "@/components/LeadForm";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LeadModal from "@/components/LeadModal";
+import { captureAttribution, getAttribution } from "@/lib/attribution";
+import { captureFirstTouchAttribution } from "@/lib/firstTouchAttribution";
 
 export default function Home() {
   const [showForm, setShowForm] = useState(false);
+
+  useEffect(() => {
+    captureAttribution();
+
+    const attribution = getAttribution();
+
+    if (attribution) {
+      captureFirstTouchAttribution(attribution);
+    }
+  }, []);
 
   const handleClick = () => {
     ensureConversion();

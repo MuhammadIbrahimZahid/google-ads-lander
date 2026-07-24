@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { completeConversion } from "@/lib/session";
+
+import { completeConversion, getConversion } from "@/lib/session";
+
 import type { CreateLeadInput } from "@/types/lead";
 
 export default function LeadForm() {
@@ -31,17 +33,59 @@ export default function LeadForm() {
     setMessage("");
 
     try {
+      /**
+       * Read active conversion journey.
+       *
+       * Single source of truth:
+       * conversion.attribution
+       */
+      const conversion = getConversion();
+
+      const attribution = conversion?.attribution ?? {};
+
       const leadData: CreateLeadInput = {
         ...formData,
-        landingPage: window.location.pathname,
-        referrer: document.referrer,
+
+        /**
+         * Landing context
+         */
+        landingPage: attribution.landingPage,
+
+        referrer: attribution.referrer,
+
+        /**
+         * Attribution
+         */
+        gclid: attribution.gclid,
+
+        utmSource: attribution.utmSource,
+
+        utmMedium: attribution.utmMedium,
+
+        utmCampaign: attribution.utmCampaign,
+
+        utmTerm: attribution.utmTerm,
+
+        utmContent: attribution.utmContent,
+
+        /**
+         * Conversion identity
+         */
+        conversionEventId: conversion?.eventId,
+
+        /**
+         * Device
+         */
+        device: attribution.device,
       };
 
       const response = await fetch("/api/leads", {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json",
         },
+
         body: JSON.stringify(leadData),
       });
 
@@ -52,13 +96,10 @@ export default function LeadForm() {
       }
 
       /**
-       * Database insert succeeded.
+       * Lead saved successfully.
        *
-       * The conversion journey already started
-       * from the CTA click.
-       *
-       * Now mark it as completed so
-       * generate_lead can fire on /thank-you.
+       * Unlock generate_lead
+       * on thank-you page.
        */
       completeConversion();
 

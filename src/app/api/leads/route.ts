@@ -28,20 +28,29 @@ export async function POST(request: Request) {
       name,
       email,
       phone,
+
       landingPage,
       referrer,
+
       gclid,
+
       utmSource,
       utmMedium,
       utmCampaign,
       utmTerm,
       utmContent,
+
+      device,
+
+      conversionEventId,
+
       debugSource,
       debugCampaign,
       debugClickId,
     } = body;
 
     const cleanName = name?.trim();
+
     const cleanEmail = email?.trim().toLowerCase();
 
     if (!cleanName) {
@@ -120,27 +129,41 @@ export async function POST(request: Request) {
 
     const lead = await createLead({
       name: cleanName,
+
       email: cleanEmail,
+
       phone: normalizedPhone ?? undefined,
 
       landingPage,
+
       referrer,
 
       gclid,
 
       utmSource,
+
       utmMedium,
+
       utmCampaign,
+
       utmTerm,
+
       utmContent,
 
+      device,
+
+      conversionEventId,
+
       debugSource,
+
       debugCampaign,
+
       debugClickId,
     });
 
     return NextResponse.json({
       success: true,
+
       lead,
     });
   } catch (error) {
@@ -149,6 +172,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: false,
+
         message: "Failed to create lead.",
       },
       {
