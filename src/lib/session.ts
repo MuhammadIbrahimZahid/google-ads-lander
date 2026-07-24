@@ -1,4 +1,6 @@
-import { Conversion } from "@/types/session";
+import type { Attribution } from "@/types/attribution";
+import type { Conversion } from "@/types/session";
+import { getAttribution } from "@/lib/attribution";
 
 const CONVERSION_KEY = "conversion";
 const CONVERSION_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
@@ -35,12 +37,15 @@ function readConversion(): Conversion | null {
 }
 
 /**
- * Check whether a conversion has expired.
+ * Check whether conversion expired.
  */
 function isExpired(conversion: Conversion) {
   return Date.now() - conversion.createdAt > CONVERSION_EXPIRY_MS;
 }
 
+/**
+ * Get current conversion journey.
+ */
 export function getConversion(): Conversion | null {
   if (typeof window === "undefined") {
     return null;
@@ -52,13 +57,15 @@ export function getConversion(): Conversion | null {
 /**
  * Ensure a conversion journey exists.
  *
- * Called when user clicks the CTA.
+ * Called when user clicks CTA.
  *
- * This only starts the journey.
- * It does not mean a lead was created.
+ * Attribution is captured once
+ * and attached to the journey.
  */
 export function ensureConversion() {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined") {
+    return;
+  }
 
   const existing = readConversion();
 
@@ -66,23 +73,33 @@ export function ensureConversion() {
     return;
   }
 
+  const attribution: Attribution = getAttribution() ?? {};
+
   const conversion: Conversion = {
     eventId: crypto.randomUUID(),
+
     started: true,
+
     completed: false,
+
     fired: false,
+
     createdAt: Date.now(),
+
+    attribution,
   };
 
   saveConversion(conversion);
 }
 
 /**
- * Mark conversion as completed after
- * successful lead database creation.
+ * Mark conversion completed
+ * after successful lead creation.
  */
 export function completeConversion() {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined") {
+    return;
+  }
 
   const conversion = readConversion();
 
@@ -97,13 +114,7 @@ export function completeConversion() {
 
 /**
  * Determine whether generate_lead
- * is allowed to fire.
- *
- * A conversion can only complete when:
- *
- * CTA started journey
- * +
- * Lead was successfully created
+ * can fire.
  */
 export function canConvert() {
   if (typeof window === "undefined") {
@@ -125,11 +136,12 @@ export function canConvert() {
 }
 
 /**
- * Mark the current conversion as completed
- * after generate_lead has been sent.
+ * Mark conversion as fired.
  */
 export function consumeConversion() {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined") {
+    return;
+  }
 
   const conversion = readConversion();
 
