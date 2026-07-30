@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
+
 import { createLead } from "@/services/leads";
+
 import type { CreateLeadInput } from "@/types/lead";
 
 function normalizePhone(phone?: string) {
   if (!phone) {
-    return null;
+    return undefined;
   }
 
   const cleaned = phone.replace(/\s+/g, "");
 
-  return cleaned || null;
+  return cleaned || undefined;
 }
 
 function isValidEmail(email: string) {
@@ -22,7 +24,7 @@ function isTooLong(value: string | undefined, max: number) {
 
 export async function POST(request: Request) {
   try {
-    const body: CreateLeadInput = await request.json();
+    const body = (await request.json()) as Partial<CreateLeadInput>;
 
     const {
       name,
@@ -49,9 +51,10 @@ export async function POST(request: Request) {
       debugClickId,
     } = body;
 
-    const cleanName = name?.trim();
+    const cleanName = typeof name === "string" ? name.trim() : "";
 
-    const cleanEmail = email?.trim().toLowerCase();
+    const cleanEmail =
+      typeof email === "string" ? email.trim().toLowerCase() : "";
 
     if (!cleanName) {
       return NextResponse.json(
@@ -81,7 +84,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message: "Please provide a valid email address.",
+          message: "Invalid email address.",
         },
         {
           status: 400,
@@ -115,7 +118,7 @@ export async function POST(request: Request) {
 
     const normalizedPhone = normalizePhone(phone);
 
-    if (isTooLong(normalizedPhone ?? undefined, 30)) {
+    if (isTooLong(normalizedPhone, 30)) {
       return NextResponse.json(
         {
           success: false,
@@ -132,7 +135,7 @@ export async function POST(request: Request) {
 
       email: cleanEmail,
 
-      phone: normalizedPhone ?? undefined,
+      phone: normalizedPhone,
 
       landingPage,
 
@@ -163,16 +166,14 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-
       lead,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Lead API error:", error);
 
     return NextResponse.json(
       {
         success: false,
-
         message: "Failed to create lead.",
       },
       {

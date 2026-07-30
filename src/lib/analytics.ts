@@ -1,11 +1,27 @@
 import { AnalyticsEvents } from "@/constants/analytics";
-import { sendEvent } from "./gtag";
-import { GenerateLeadParams, HeroCTAParams } from "@/types/analytics";
+import { pushToDataLayer } from "./dataLayer";
 
-export function trackGenerateLead(params?: GenerateLeadParams) {
-  sendEvent(AnalyticsEvents.GENERATE_LEAD, params);
+import type { GenerateLeadParams, HeroCTAParams } from "@/types/analytics";
+
+/**
+ * Track successful lead generation.
+ *
+ * This event should only fire
+ * after the lead is successfully saved.
+ */
+export function trackGenerateLead(params: GenerateLeadParams) {
+  pushToDataLayer(AnalyticsEvents.GENERATE_LEAD, {
+    ...params,
+  });
 }
 
+/**
+ * Track hero CTA interaction.
+ *
+ * Used for measuring user intent.
+ */
 export function trackHeroCTAClick(params: HeroCTAParams) {
-  sendEvent(AnalyticsEvents.HERO_CTA_CLICK, params);
+  pushToDataLayer(AnalyticsEvents.HERO_CTA_CLICK, {
+    ...params,
+  });
 }

@@ -4,41 +4,80 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { trackGenerateLead } from "@/lib/analytics";
 import { canConvert, consumeConversion, getConversion } from "@/lib/session";
+
+import { trackGenerateLead } from "@/lib/analytics";
+
+function waitForGTM(timeout = 3000) {
+  return new Promise<boolean>((resolve) => {
+    const start = Date.now();
+
+    function check() {
+      if (typeof window !== "undefined" && Array.isArray(window.dataLayer)) {
+        resolve(true);
+        return;
+      }
+
+      if (Date.now() - start >= timeout) {
+        resolve(false);
+        return;
+      }
+
+      setTimeout(check, 100);
+    }
+
+    check();
+  });
+}
 
 export default function ThankYouPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!canConvert()) {
-      router.replace("/");
-      return;
+    async function sendConversion() {
+      if (!canConvert()) {
+        router.replace("/");
+        return;
+      }
+
+      const conversion = getConversion();
+
+      if (!conversion || conversion.fired) {
+        router.replace("/");
+        return;
+      }
+
+      const gtmReady = await waitForGTM();
+
+      /**
+       * GTM not available.
+       *
+       * Do not mark conversion as fired.
+       * User can retry.
+       */
+      if (!gtmReady) {
+        console.warn("GTM not ready. Conversion not sent.");
+
+        return;
+      }
+
+      trackGenerateLead({
+        lead_source: "landing_page",
+
+        event_id: conversion.eventId,
+      });
+
+      console.log("generate_lead sent", conversion.eventId);
+
+      /**
+       * Give GTM time to process.
+       */
+      setTimeout(() => {
+        consumeConversion();
+      }, 1000);
     }
 
-    const conversion = getConversion();
-
-    if (!conversion || conversion.fired) {
-      router.replace("/");
-      return;
-    }
-
-    trackGenerateLead({
-      lead_source: "landing_page",
-      event_id: conversion.eventId,
-    });
-
-    /**
-     * Allow GA4 event dispatch before
-     * marking the conversion as completed.
-     */
-    const timer = setTimeout(() => {
-      consumeConversion();
-    }, 300);
-
-    return () => {
-      clearTimeout(timer);
-    };
+    sendConversion();
   }, [router]);
 
   return (
