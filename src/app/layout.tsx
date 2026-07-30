@@ -24,32 +24,28 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
+
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <Script
-        src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? ""}`}
-        strategy="afterInteractive"
-      />
+      {GTM_ID && (
+        <>
+          <Script id="google-tag-manager-init" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+            `}
+          </Script>
 
-      <Script id="google-analytics" strategy="afterInteractive">
-        {`
-          if (!window.gtag) {
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            window.gtag = gtag;
-
-            const GA_ID = "${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? ""}";
-
-            if (GA_ID) {
-              gtag('js', new Date());
-              gtag('config', GA_ID,);
-            }
-          }
-        `}
-      </Script>
+          <Script
+            id="google-tag-manager"
+            strategy="afterInteractive"
+            src={`https://www.googletagmanager.com/gtm.js?id=${GTM_ID}`}
+          />
+        </>
+      )}
 
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
