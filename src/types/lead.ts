@@ -1,6 +1,6 @@
 export interface CreateLeadInput {
   /**
-   * Customer information
+   * Customer information.
    */
   name: string;
 
@@ -9,14 +9,14 @@ export interface CreateLeadInput {
   phone?: string;
 
   /**
-   * Landing context
+   * Landing context.
    */
   landingPage?: string;
 
   referrer?: string;
 
   /**
-   * Google attribution
+   * Google attribution.
    */
   gclid?: string;
 
@@ -31,20 +31,23 @@ export interface CreateLeadInput {
   utmContent?: string;
 
   /**
-   * Device information
+   * Device information.
    */
   device?: string;
 
   /**
-   * Conversion identity
+   * Conversion identity.
    *
-   * Links the lead to the
-   * conversion journey.
+   * Connects the lead record
+   * with the frontend conversion journey.
    */
   conversionEventId?: string;
 
   /**
-   * Development/testing fields
+   * Development/testing fields.
+   *
+   * Useful when validating GTM,
+   * GA4, and Google Ads flows.
    */
   debugSource?: string;
 
@@ -54,10 +57,24 @@ export interface CreateLeadInput {
 }
 
 export interface Lead extends CreateLeadInput {
+  /**
+   * Database primary key.
+   */
   id: number;
 
+  /**
+   * Lead lifecycle state.
+   *
+   * Example:
+   * new
+   * contacted
+   * converted
+   */
   status: string;
 
+  /**
+   * Database timestamps.
+   */
   createdAt: Date;
 
   updatedAt: Date;

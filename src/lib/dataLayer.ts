@@ -7,29 +7,49 @@ declare global {
 }
 
 /**
- * Push an application event to Google Tag Manager's Data Layer.
+ * Ensure GTM dataLayer exists.
+ */
+function getDataLayer() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  window.dataLayer = window.dataLayer || [];
+
+  return window.dataLayer;
+}
+
+/**
+ * Push application events
+ * into Google Tag Manager dataLayer.
  *
- * The application is intentionally unaware of:
- * - GA4 measurement IDs
- * - Google Ads conversion IDs
- * - GTM tags and triggers
+ * The application does not know:
  *
- * GTM decides how each business event is processed.
+ * - GA4 Measurement ID
+ * - Google Ads conversion ID
+ * - GTM tags
+ *
+ * GTM controls processing.
  */
 export function pushToDataLayer<T extends object>(
   eventName: string,
   params?: T,
 ) {
-  if (typeof window === "undefined") {
+  const dataLayer = getDataLayer();
+
+  if (!dataLayer) {
     return;
   }
 
-  window.dataLayer = window.dataLayer || [];
-
   const event: DataLayerEvent = {
     event: eventName,
-    ...params,
+
+    ...(params ?? {}),
   };
 
-  window.dataLayer.push(event);
+  if (process.env.NODE_ENV === "development") {
+    console.log("[dataLayer event]", event);
+  }
+
+  dataLayer.push(event);
 }

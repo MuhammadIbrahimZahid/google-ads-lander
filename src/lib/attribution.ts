@@ -3,7 +3,7 @@ import type { Attribution } from "@/types/attribution";
 const ATTRIBUTION_KEY = "attribution";
 
 /**
- * Save attribution data.
+ * Save current attribution.
  */
 function saveAttribution(attribution: Attribution) {
   sessionStorage.setItem(ATTRIBUTION_KEY, JSON.stringify(attribution));
@@ -22,17 +22,28 @@ function readAttribution(): Attribution | null {
   try {
     return JSON.parse(value) as Attribution;
   } catch {
+    sessionStorage.removeItem(ATTRIBUTION_KEY);
+
     return null;
   }
 }
 
 /**
- * Capture attribution from current landing page.
+ * Capture attribution from landing page.
  *
- * This runs when the user first lands.
+ * Existing attribution is preserved.
  */
 export function captureAttribution() {
   if (typeof window === "undefined") {
+    return;
+  }
+
+  const existing = readAttribution();
+
+  /**
+   * Do not overwrite existing session attribution.
+   */
+  if (existing) {
     return;
   }
 
@@ -62,7 +73,7 @@ export function captureAttribution() {
 }
 
 /**
- * Get current attribution.
+ * Get current session attribution.
  */
 export function getAttribution(): Attribution | null {
   if (typeof window === "undefined") {

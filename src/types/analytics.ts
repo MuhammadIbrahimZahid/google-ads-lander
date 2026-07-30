@@ -1,16 +1,40 @@
 export interface GenerateLeadParams {
-  lead_source?: string;
-  value?: number;
-  currency?: string;
+  /**
+   * Source of the conversion.
+   *
+   * Example:
+   * landing_page
+   */
+  lead_source: string;
 
   /**
-   * Stable identifier for this conversion event.
-   * Useful for debugging, deduplication,
-   * and future server-side/offline processing.
+   * Stable conversion identifier.
+   *
+   * Matches the conversion journey
+   * stored in sessionStorage.
    */
-  event_id?: string;
+  event_id: string;
+
+  /**
+   * Optional monetary value.
+   */
+  value?: number;
+
+  /**
+   * Optional currency code.
+   *
+   * Example:
+   * USD
+   */
+  currency?: string;
 }
 
 export interface HeroCTAParams {
+  /**
+   * CTA label.
+   *
+   * Example:
+   * Get Started
+   */
   button_name: string;
 }

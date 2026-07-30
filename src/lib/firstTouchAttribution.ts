@@ -4,37 +4,40 @@ const FIRST_TOUCH_KEY = "first_touch_attribution";
 
 /**
  * Save first-touch attribution.
- *
- * This should only happen once.
- * Existing attribution is never overwritten.
  */
 function saveFirstTouch(attribution: FirstTouchAttribution) {
-  localStorage.setItem(FIRST_TOUCH_KEY, JSON.stringify(attribution));
+  try {
+    localStorage.setItem(FIRST_TOUCH_KEY, JSON.stringify(attribution));
+  } catch {
+    // Ignore storage failures.
+    // Tracking should never break UX.
+  }
 }
 
 /**
  * Read first-touch attribution safely.
  */
 function readFirstTouch(): FirstTouchAttribution | null {
-  const value = localStorage.getItem(FIRST_TOUCH_KEY);
-
-  if (!value) {
-    return null;
-  }
-
   try {
+    const value = localStorage.getItem(FIRST_TOUCH_KEY);
+
+    if (!value) {
+      return null;
+    }
+
     return JSON.parse(value) as FirstTouchAttribution;
   } catch {
+    localStorage.removeItem(FIRST_TOUCH_KEY);
+
     return null;
   }
 }
 
 /**
- * Capture first marketing source.
+ * Capture original acquisition source.
  *
- * Runs when user first arrives.
- *
- * Existing value is preserved.
+ * Existing first-touch data
+ * is never overwritten.
  */
 export function captureFirstTouchAttribution(attribution: Attribution) {
   if (typeof window === "undefined") {
@@ -43,17 +46,13 @@ export function captureFirstTouchAttribution(attribution: Attribution) {
 
   const existing = readFirstTouch();
 
-  /**
-   * First touch already exists.
-   *
-   * Do not overwrite.
-   */
   if (existing) {
     return;
   }
 
   saveFirstTouch({
     ...attribution,
+
     capturedAt: Date.now(),
   });
 }
@@ -70,7 +69,7 @@ export function getFirstTouchAttribution(): Attribution | null {
 }
 
 /**
- * Remove first-touch data.
+ * Remove first-touch attribution.
  */
 export function clearFirstTouchAttribution() {
   if (typeof window === "undefined") {

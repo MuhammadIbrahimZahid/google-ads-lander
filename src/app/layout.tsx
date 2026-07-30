@@ -33,12 +33,19 @@ export default function RootLayout({
     >
       {GTM_ID && (
         <>
+          {/* Initialize GTM dataLayer before loading GTM */}
           <Script id="google-tag-manager-init" strategy="afterInteractive">
             {`
               window.dataLayer = window.dataLayer || [];
+
+              window.dataLayer.push({
+                'gtm.start': new Date().getTime(),
+                event: 'gtm.js'
+              });
             `}
           </Script>
 
+          {/* Load Google Tag Manager */}
           <Script
             id="google-tag-manager"
             strategy="afterInteractive"
