@@ -329,13 +329,15 @@ Difficulty:
 
 ---
 
-# Phase 5 — Google Ads Enhanced Conversions for Leads
+# Phase 5 — Enhanced Conversion Data Pipeline
 
 ## Goal
 
-Improve Google Ads conversion matching using first-party customer information collected during lead creation.
+Build a reusable first-party identity pipeline that prepares customer data for privacy-safe measurement and Enhanced Conversions.
 
-Current:
+Rather than only identifying a conversion with an `event_id`, enrich the conversion journey with normalized customer data that can later be used by platforms such as Google Ads for privacy-safe matching. Google Enhanced Conversions use normalized first-party customer data (for example, email and phone) that is hashed with SHA-256 before being used for matching. ([Google Help][1])
+
+### Current
 
 ```text
 Conversion
@@ -345,32 +347,57 @@ Conversion
 event_id
 ```
 
-New:
+### New
 
-```text
-Lead Data
-
-↓
-
-Email / Phone
+Lead Created
 
 ↓
 
-Privacy-safe hashing
+Build Identity Data
 
 ↓
 
-Google Ads
-```
+Normalize Customer Data
+
+↓
+
+Privacy-safe SHA-256 Hashing
+
+↓
+
+Enhanced Conversion Payload
+
+↓
+
+dataLayer
+
+↓
+
+Google Tag Manager
+
+↓
+
+Ready for Google Ads
 
 ---
 
-## Skills Learned
+### New Capabilities
 
-- First-party data handling
-- Privacy-safe hashing
-- Enhanced Conversions for Leads
-- Better conversion matching
+- Normalize customer data
+- Build reusable enhanced conversion payloads
+- Understand privacy-safe hashing
+- Prepare data for Google Tag Manager
+- Separate business logic from marketing platform integrations
+
+---
+
+### Skills Learned
+
+- Enhanced Conversions architecture
+- Data normalization
+- SHA-256 hashing
+- First-party identity matching
+- Privacy-aware tracking design
 
 Difficulty:
 

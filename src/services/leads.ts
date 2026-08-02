@@ -1,4 +1,5 @@
 import pool from "@/lib/db";
+
 import type { CreateLeadInput } from "@/types/lead";
 
 export async function createLead(data: CreateLeadInput) {
@@ -6,9 +7,13 @@ export async function createLead(data: CreateLeadInput) {
     const result = await pool.query(
       `
       INSERT INTO public.leads (
-        name,
+        first_name,
+        last_name,
         email,
         phone,
+
+        country,
+        postal_code,
 
         landing_page,
         referrer,
@@ -30,22 +35,29 @@ export async function createLead(data: CreateLeadInput) {
       )
 
       VALUES (
-        $1,$2,$3,
-        $4,$5,
-        $6,
-        $7,$8,$9,$10,$11,
-        $12,$13,
-        $14,$15,$16
+        $1,$2,$3,$4,
+        $5,$6,
+        $7,$8,
+        $9,
+        $10,$11,$12,$13,$14,
+        $15,$16,
+        $17,$18,$19
       )
 
       RETURNING *;
       `,
       [
-        data.name,
+        data.firstName,
+
+        data.lastName,
 
         data.email,
 
         data.phone ?? null,
+
+        data.country ?? null,
+
+        data.postalCode ?? null,
 
         data.landingPage ?? null,
 

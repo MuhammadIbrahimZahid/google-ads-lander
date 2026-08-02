@@ -8,6 +8,10 @@ import { canConvert, consumeConversion, getConversion } from "@/lib/session";
 
 import { trackGenerateLead } from "@/lib/analytics";
 
+import { getLeadIdentity, clearLeadIdentity } from "@/lib/leadIdentity";
+
+import { buildEnhancedConversionData } from "@/lib/enhancedConversions";
+
 function waitForGTM(timeout = 3000) {
   return new Promise<boolean>((resolve) => {
     const start = Date.now();
@@ -49,29 +53,30 @@ export default function ThankYouPage() {
 
       const gtmReady = await waitForGTM();
 
-      /**
-       * GTM not available.
-       *
-       * Do not mark conversion as fired.
-       * User can retry.
-       */
       if (!gtmReady) {
         console.warn("GTM not ready. Conversion not sent.");
 
         return;
       }
 
+      const leadIdentity = getLeadIdentity();
+
+      const enhancedConversionData = leadIdentity
+        ? await buildEnhancedConversionData(leadIdentity)
+        : undefined;
+
       trackGenerateLead({
         lead_source: "landing_page",
 
         event_id: conversion.eventId,
+
+        user_data: enhancedConversionData,
       });
 
       console.log("generate_lead sent", conversion.eventId);
 
-      /**
-       * Give GTM time to process.
-       */
+      clearLeadIdentity();
+
       setTimeout(() => {
         consumeConversion();
       }, 1000);

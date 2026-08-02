@@ -1,6 +1,8 @@
+import type { EnhancedConversionPayload } from "./enhancedConversion";
+
 export interface GenerateLeadParams {
   /**
-   * Source of the conversion.
+   * Source of the conversion event.
    *
    * Example:
    * landing_page
@@ -10,13 +12,29 @@ export interface GenerateLeadParams {
   /**
    * Stable conversion identifier.
    *
-   * Matches the conversion journey
-   * stored in sessionStorage.
+   * Used to connect:
+   *
+   * CTA click
+   * ↓
+   * Lead submission
+   * ↓
+   * generate_lead event
    */
   event_id: string;
 
   /**
-   * Optional monetary value.
+   * Enhanced Conversion user data.
+   *
+   * Contains SHA-256 hashed
+   * first-party customer information.
+   *
+   * Passed through GTM for
+   * Google Ads enhanced conversions.
+   */
+  user_data?: EnhancedConversionPayload;
+
+  /**
+   * Optional conversion value.
    */
   value?: number;
 
