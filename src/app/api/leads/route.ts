@@ -14,6 +14,16 @@ function normalizePhone(phone?: string) {
   return cleaned || undefined;
 }
 
+function normalizeOptionalText(value?: string) {
+  if (!value) {
+    return undefined;
+  }
+
+  const cleaned = value.trim();
+
+  return cleaned || undefined;
+}
+
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
@@ -27,9 +37,13 @@ export async function POST(request: Request) {
     const body = (await request.json()) as Partial<CreateLeadInput>;
 
     const {
-      name,
+      firstName,
+      lastName,
       email,
       phone,
+
+      country,
+      postalCode,
 
       landingPage,
       referrer,
@@ -51,16 +65,35 @@ export async function POST(request: Request) {
       debugClickId,
     } = body;
 
-    const cleanName = typeof name === "string" ? name.trim() : "";
+    const cleanFirstName =
+      typeof firstName === "string" ? firstName.trim() : "";
+
+    const cleanLastName = typeof lastName === "string" ? lastName.trim() : "";
 
     const cleanEmail =
       typeof email === "string" ? email.trim().toLowerCase() : "";
 
-    if (!cleanName) {
+    const cleanCountry = normalizeOptionalText(country);
+
+    const cleanPostalCode = normalizeOptionalText(postalCode);
+
+    if (!cleanFirstName) {
       return NextResponse.json(
         {
           success: false,
-          message: "Name is required.",
+          message: "First name is required.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (!cleanLastName) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Surname is required.",
         },
         {
           status: 400,
@@ -92,11 +125,23 @@ export async function POST(request: Request) {
       );
     }
 
-    if (isTooLong(cleanName, 100)) {
+    if (isTooLong(cleanFirstName, 100)) {
       return NextResponse.json(
         {
           success: false,
-          message: "Name is too long.",
+          message: "First name is too long.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (isTooLong(cleanLastName, 100)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Surname is too long.",
         },
         {
           status: 400,
@@ -109,6 +154,30 @@ export async function POST(request: Request) {
         {
           success: false,
           message: "Email is too long.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (isTooLong(cleanCountry, 100)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Country value is too long.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (isTooLong(cleanPostalCode, 30)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Postal code is too long.",
         },
         {
           status: 400,
@@ -131,11 +200,17 @@ export async function POST(request: Request) {
     }
 
     const lead = await createLead({
-      name: cleanName,
+      firstName: cleanFirstName,
+
+      lastName: cleanLastName,
 
       email: cleanEmail,
 
       phone: normalizedPhone,
+
+      country: cleanCountry,
+
+      postalCode: cleanPostalCode,
 
       landingPage,
 

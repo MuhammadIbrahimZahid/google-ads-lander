@@ -1,5 +1,12 @@
 import type { Attribution } from "./attribution";
+import type { EnhancedConversionPayload } from "./enhancedConversion";
 
+/**
+ * Conversion journey stored in sessionStorage.
+ *
+ * Represents the user's progress from
+ * CTA interaction → lead submission → analytics event.
+ */
 export interface Conversion {
   /**
    * Unique identifier for this conversion journey.
@@ -44,4 +51,14 @@ export interface Conversion {
    * when conversion started.
    */
   attribution: Attribution;
+
+  /**
+   * Privacy-safe customer identity payload.
+   *
+   * Created after lead submission.
+   *
+   * Contains hashed identifiers that can
+   * later be consumed by GTM/Google Ads.
+   */
+  enhancedConversion?: EnhancedConversionPayload;
 }

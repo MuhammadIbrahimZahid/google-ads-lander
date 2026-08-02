@@ -1,461 +1,469 @@
-# Google Ads Lander — Phase 4
+# Google Ads Lander
 
-A production-oriented lead generation, attribution, and analytics measurement system built with **Next.js**, **TypeScript**, **Google Tag Manager**, **Google Analytics 4**, **Google Ads**, and **Neon PostgreSQL**.
+A production-oriented lead generation and conversion measurement system built with:
 
-Phase 4 extends the lead capture platform by introducing a complete analytics event pipeline.
+- Next.js
+- TypeScript
+- React
+- Google Tag Manager
+- Google Analytics 4
+- Google Ads Conversion Tracking
+- Enhanced Conversions for Leads
+- Neon PostgreSQL
 
-The system now captures marketing attribution, manages conversion journeys, stores leads with attribution data, publishes structured business events through the Data Layer, routes events through Google Tag Manager, and delivers conversion data to Google Analytics 4.
+The project demonstrates a complete advertising conversion pipeline:
+
+```
+
+Google Ads
+
+↓
+
+Landing Page
+
+↓
+
+Attribution Capture
+
+↓
+
+Conversion Journey
+
+↓
+
+Lead Submission
+
+↓
+
+Database Persistence
+
+↓
+
+Google Tag Manager
+
+↓
+
+GA4 + Google Ads Conversion Tracking
+
+```
 
 ---
 
-# Conversion Journey
+# Project Overview
 
-````text
-### Google Ad
-    │
-    ▼
-### Landing Page
-    │
-    ▼
-### Capture Attribution
-(sessionStorage)
-    │
-    ▼
-### First Touch Attribution
-(localStorage)
-    │
-    ▼
-Hero **CTA** Click
-    │
-    ▼
-### Conversion Journey Created
-(event_id + attribution)
-    │
-    ▼
-### Lead Modal
-    │
-    ▼
-### Lead Form Submission
-    │
-    ▼
-**POST** /api/leads
-    │
-    ▼
-### Server Validation
-    │
-    ▼
-Neon PostgreSQL
-    │
-    ▼
-completeConversion()
-    │
-    ▼
-### Thank You Page
-    │
-    ▼
-### Data Layer Event
-(generate_lead)
-    │
-    ▼
-### Google Tag Manager
-    │
-    ▼
-**GA4** Event Tag
-    │
-    ▼
-Google Analytics 4
-    │
-    ▼
-### Google Ads
+Google Ads Lander is a learning-focused production architecture for understanding how modern marketing platforms measure, attribute, and optimize lead generation campaigns.
 
-Phase 4 creates a complete measurement pipeline where application events are separated from marketing platforms.
+The system separates:
 
-The application publishes business events.
+Application Logic
 
-Google Tag Manager controls where those events are sent.
+from
 
-Features
+Marketing Measurement Infrastructure
+
+The application is responsible for:
+
+- Creating conversion journeys
+- Capturing attribution data
+- Validating leads
+- Persisting customer information
+- Publishing business events
+
+Google Tag Manager is responsible for:
+
+- Receiving Data Layer events
+- Routing analytics events
+- Sending conversion signals to external platforms
+
+---
+
+# Features
+
+## Lead Generation
 
 Implemented:
 
-Next.js App Router
-TypeScript
-### React Client Components
-Google Tag Manager integration
-Google Analytics 4 integration
-Google Ads conversion workflow
-Data Layer event architecture
-Custom analytics events
-**GTM** custom event triggers
-**GA4** Event tags
-Event parameter mapping
-Session-based conversion management
-Conversion expiry handling
-Duplicate conversion prevention
-Hero **CTA** tracking
-Automatic attribution capture
-First-touch attribution support
-Lead capture modal
-**API** Route handling
-Server-side validation
-Input normalization
-Neon PostgreSQL integration
-Service layer architecture
-Device tracking
-Conversion Event ID persistence
-Landing page attribution
-**UTM** parameter tracking
-**GCLID** capture
-Thank-you page conversion validation
-Production **GTM** validation
-**GA4** DebugView validation
-Architecture
+- Lead capture modal
+- Client-side validation
+- Server-side validation
+- API route handling
+- Neon PostgreSQL persistence
+- Lead service architecture
+
+---
+
+## Attribution Tracking
+
+The system captures:
+
+- Landing page
+- Referrer
+- GCLID
+- UTM source
+- UTM medium
+- UTM campaign
+- UTM term
+- UTM content
+- Device information
+
+Storage:
+
+```
+
+sessionStorage
+
+↓
+Conversion Journey
+
+localStorage
+
+↓
+First Touch Attribution
+
+```
+
+---
+
+## Conversion Journey Management
+
+Each conversion receives a unique identifier.
+
+Example:
+
+```
+
+event_id:
+8fdb4fe5-6ec5-49fb-a332-ef52f515b23b
+
+```
+
+The same identifier connects:
+
+```
+
 Browser
-    │
-    ▼
-### Attribution Capture
-    │
-    ▼
-### Conversion Journey
-    │
-    ▼
-### React Components
-    │
-    ▼
-Route Handler (/api/leads)
-    │
-    ▼
-### Lead Service
-    │
-    ▼
-Neon PostgreSQL
-    │
-    ▼
-completeConversion()
-    │
-    ▼
-### Data Layer
-    │
-    ▼
-### Google Tag Manager
-    │
-    ▼
+
+↓
+
+Database Lead
+
+↓
+
+GA4 Event
+
+↓
+
+Google Ads Conversion
+
+```
+
+This enables:
+
+- Debugging
+- Deduplication
+- Offline conversion workflows
+- Attribution analysis
+
+---
+
+# Analytics Architecture
+
+The measurement pipeline:
+
+```
+
+Next.js Application
+
+↓
+
+window.dataLayer
+
+↓
+
+Google Tag Manager
+
+↓
+
+GA4 Event Tags
+
+↓
+
 Google Analytics 4
 
-Each layer has a single responsibility:
-
-Attribution collection Conversion management User interface **API** validation Database persistence Event publishing Analytics routing ### Attribution Flow
-
-Marketing attribution is captured automatically when the visitor lands on the website.
-
-### Landing Page
-
 ↓
 
-captureAttribution()
+Google Ads
 
-↓
+```
 
-sessionStorage
+The application never directly communicates with marketing platforms.
 
-↓
+It publishes business events only.
 
-captureFirstTouchAttribution()
+---
 
-↓
-
-localStorage
-
-↓
-
-ensureConversion()
-
-↓
-
-### Conversion Object
-
-↓
-
-### Lead Submission
-
-↓
-
-Database
-
-Captured values:
-
-landing_page
-
-referrer
-
-gclid
-
-utm_source
-
-utm_medium
-
-utm_campaign
-
-utm_term
-
-utm_content
-
-device
-
-### Conversion Journey
-
-The conversion object contains conversion state and attribution context.
-
-Example:
-
-{
-    *eventId*: *921d8c5e-c124-4d2d-**9587**-427cb7d49bb6*,
-    *started*: true,
-    *completed*: true,
-    *fired*: false,
-    *createdAt*: **1750000000**,
-    *attribution*: {
-    *gclid*: *test123*,
-    *utmSource*: *google*,
-    *utmMedium*: *cpc*,
-    *utmCampaign*: *summer_sale*,
-    *landingPage*: */*,
-    *device*: *Mozilla/5.0...*
-    }
-}
-
-The conversion journey remains the single source of truth throughout the lead lifecycle.
-
-### Browser Storage
-
-sessionStorage
-
-Stores:
-
-Active conversion journey Attribution Conversion state Event ID Conversion expiry
-
-Conversion journeys expire after:
-
-30 minutes
-
-localStorage
-
-Stores:
-
-hero_click_fired
-
-first_touch_attribution
-
-First-touch attribution is written once and never overwritten.
-
-### Lead Pipeline
-
-### Landing Page
-
-↓
-
-### Capture Attribution
-
-↓
-
-**CTA** Click
-
-↓
-
-### Conversion Created
-
-↓
-
-### Lead Form
-
-↓
-
-**POST** /api/leads
-
-↓
-
-Validation
-
-↓
-
-### Lead Service
-
-↓
-
-Neon PostgreSQL
-
-↓
-
-completeConversion()
-
-↓
-
-### Thank You Page
-
-↓
-
-### Data Layer
-
-↓
-
-### Google Tag Manager
-
-↓
-
-generate_lead
-
-### Data Layer
-
-Phase 4 introduces a structured Data Layer communication layer.
-
-The application publishes events:
-
-window.dataLayer.push({
-    event: *generate_lead*,
-    lead_source: *landing_page*,
-    event_id: *uuid*
-});
-
-The application does not directly communicate with **GA4**.
-
-Instead:
-
-Next.js
-
-↓
-
-### Data Layer
-
-↓
-
-### Google Tag Manager
-
-↓
-
-### Analytics Platforms
-
-### Analytics Events
-
-hero_cta_click
-
-Represents user engagement.
-
-Triggered when:
-
-User clicks *Get Started*
-
-Payload:
-
-event
-
-button_name
-
-Example:
-
-{
-    event:*hero_cta_click*,
-    button_name:*Get Started*
-}
-
-generate_lead
-
-Represents a completed lead conversion.
-
-Triggered after:
-
-### Lead Stored
-
-↓
-
-completeConversion()
-
-↓
-
-### Thank You Page
-
-↓
-
-generate_lead
-
-Payload:
-
-event
-
-lead_source
-
-event_id
-
-Example:
-
-{
-    event:*generate_lead*,
-    lead_source:*landing_page*,
-    event_id:*uuid*
-}
-
-### Google Tag Manager
-
-Phase 4 introduces **GTM** as the analytics routing layer.
-
-Configured events:
-
-CE - hero_cta_click
-
-CE - generate_lead
-
-**GA4** Event Tags
+# Google Tag Manager Configuration
 
 Configured tags:
 
-**GA4** Event - hero_cta_click
+## Google Tag
+
+Purpose:
+
+Loads Google Analytics configuration.
+
+Trigger:
+
+```
+
+Initialization - All Pages
+
+```
+
+---
+
+## GA4 Event Tags
+
+### hero_cta_click
+
+Tracks:
+
+```
+
+User clicks "Get Started"
+
+```
 
 Parameters:
+
+```
 
 button_name
 
-Source:
+```
 
-**DLV** - button_name
+---
 
-**GA4** Event - generate_lead
+### generate_lead
+
+Tracks:
+
+```
+
+Completed lead submission
+
+```
 
 Parameters:
+
+```
 
 lead_source
 
 event_id
 
-Sources:
+```
 
-**DLV** - lead_source
+---
 
-**DLV** - event_id
+## Google Ads Conversion Tracking
 
-Database
+Configured:
 
-Each stored lead contains:
+```
 
-Customer
+Google Ads Conversion Tag
 
-name email phone
+```
 
-### Marketing Attribution
+Conversion:
 
-landing_page referrer gclid utm_source utm_medium utm_campaign utm_term utm_content
+```
 
-Conversion
+Lead Submitted - Website
 
-device event_id
+```
 
-Development
+Trigger:
 
-debug_source debug_campaign debug_click_id
+```
 
-This allows every lead to be connected to its marketing origin and analytics event.
+CE - generate_lead
 
-### Project Structure
+```
 
+---
+
+## Enhanced Conversions
+
+Implemented through:
+
+```
+
+Google Ads User-provided Data Event
+
+```
+
+Data source:
+
+```
+
+user_data
+
+```
+
+The system sends hashed customer information for improved conversion matching.
+
+---
+
+# Local Development
+
+## Requirements
+
+Recommended:
+
+- Node.js 20+
+- npm
+- PostgreSQL database
+
+---
+
+## Installation
+
+Clone the repository:
+
+```bash
+git clone <repository-url>
+
+cd google-ads-lander
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+---
+
+# Environment Variables
+
+Create:
+
+```
+.env.local
+```
+
+Add:
+
+```env
+NEXT_PUBLIC_GTM_ID=GTM-XXXXXXXX
+
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+
+DATABASE_URL=your_neon_database_connection
+```
+
+Next.js loads environment variables from `.env*` files. Public browser variables must use the `NEXT_PUBLIC_` prefix. ([Next.js][1])
+
+---
+
+# Running the Application
+
+Start development server:
+
+```bash
+npm run dev
+```
+
+Open:
+
+```
+http://localhost:3000
+```
+
+Next.js development servers are started using the `next dev` workflow. ([Next.js][2])
+
+---
+
+# Production Build
+
+Create production build:
+
+```bash
+npm run build
+```
+
+Start production server:
+
+```bash
+npm start
+```
+
+A Next.js production deployment uses the build/start workflow. ([Next.js][3])
+
+---
+
+# Testing
+
+The implementation has been validated through:
+
+## Application
+
+✅ Conversion journey creation
+✅ Attribution capture
+✅ Lead submission
+✅ Database persistence
+✅ Event ID persistence
+
+---
+
+## Google Tag Manager
+
+Verified:
+
+✅ Container loading
+✅ Data Layer events
+✅ Custom Event triggers
+✅ GA4 tags firing
+✅ Google Ads conversion tags firing
+✅ Enhanced conversion tag firing
+
+---
+
+## Google Analytics 4
+
+Verified:
+
+✅ hero_cta_click event
+✅ generate_lead event
+✅ Event parameters
+✅ DebugView delivery
+✅ Realtime reporting
+
+---
+
+## Google Ads
+
+Verified:
+
+✅ Conversion action created
+
+✅ Conversion ID configured
+
+✅ Conversion label configured
+
+✅ Google Ads conversion tag firing
+
+✅ Enhanced conversions configured through GTM
+
+---
+
+# Project Structure
+
+```
 src/
+
 ├── app/
 │   ├── api/
 │   │   └── leads/
@@ -464,7 +472,6 @@ src/
 │   ├── thank-you/
 │   │   └── page.tsx
 │   │
-│   ├── layout.tsx
 │   └── page.tsx
 │
 ├── components/
@@ -476,8 +483,6 @@ src/
 │   ├── attribution.ts
 │   ├── dataLayer.ts
 │   ├── firstTouchAttribution.ts
-│   ├── db.ts
-│   ├── gtag.ts
 │   ├── session.ts
 │   └── tracking.ts
 │
@@ -485,86 +490,91 @@ src/
 │   └── leads.ts
 │
 └── types/
-    ├── analytics.ts
-    ├── attribution.ts
-    ├── lead.ts
-    └── session.ts
+```
 
-### Environment Variables
+---
 
-Create:
+# Documentation
 
-.env.local
+Detailed phase documentation:
 
-Add:
+```
+docs/
 
-NEXT_PUBLIC_GTM_ID=**GTM**-**XXXXXXXX** NEXT_PUBLIC_GA_MEASUREMENT_ID=G-**XXXXXXXXXX** DATABASE_URL=your_neon_connection_string
+├── Phase-1
 
-Installation npm install
+├── Phase-2
 
-Development npm run dev
+├── Phase-3
 
-Open:
+├── Phase-4
+│   └── V1.md
 
-[http://localhost:**3000**](http://localhost:**3000**)
+└── Phase-5
+    └── V1.md
+```
 
-Production npm run build
+---
 
-npm start
+# Current Status
 
-Testing
+Completed:
 
-Verified:
+✅ Lead generation system
+✅ Attribution tracking
+✅ Conversion journey management
+✅ GA4 integration
+✅ Google Tag Manager integration
+✅ Google Ads conversion tracking
+✅ Enhanced conversions setup
+✅ Production validation
 
-Attribution ✅ Automatic attribution capture ✅ **UTM** persistence ✅ **GCLID** capture ✅ Device capture ✅ First-touch attribution ✅ Attribution attached to conversion journey ### Lead Processing ✅ Browser submission ✅ **API** validation ✅ Database persistence ✅ Event ID persistence ✅ Attribution persistence ### Analytics Pipeline ✅ **GTM** container loading ✅ Data Layer initialization ✅ hero_cta_click event ✅ generate_lead event ✅ **GTM** custom event triggers ✅ **GA4** Event tags firing ✅ **GA4** DebugView events ✅ **GA4** Realtime events ✅ Production Vercel validation ### Google Ads Integration
+---
 
-Current flow:
+# Future Roadmap
 
-Google Analytics 4
+Planned:
+
+- Offline conversion imports
+- CRM synchronization
+- Qualified lead tracking
+- Revenue attribution
+- Server-side GTM
+- Consent Mode
+- Advanced attribution reporting
+
+---
+
+# Purpose
+
+This project is built as a complete learning implementation of a modern Google Ads lead measurement architecture.
+
+The goal is to understand the complete path:
+
+```
+User
 
 ↓
 
-generate_lead
+Advertisement
 
 ↓
 
-### Google Ads Conversion Import
+Website
 
 ↓
 
-### Conversion Action
+Conversion
 
-Recommended configuration:
+↓
 
-Event:
+Database
 
-generate_lead
+↓
 
-Count:
+Analytics
 
-One
+↓
 
-Source:
-
-Google Analytics 4
-
-Only completed and validated leads should become advertising conversions.
-
-### Future Roadmap
-
-Upcoming phases:
-
-Enhanced Conversions for Leads Offline conversion imports **CRM** synchronization Qualified lead tracking Revenue attribution Server-side **GTM** Consent management Marketing dashboards Advanced attribution reporting
-
-See future.md for the complete roadmap.
-
-Phase 4 Completion
-
-Phase 4 completes the analytics measurement foundation.
-
-Implemented:
-
-✅ Automatic attribution capture ✅ First-touch attribution storage ✅ Conversion journey management ✅ Lead persistence ✅ Event ID consistency ✅ Data Layer architecture ✅ Google Tag Manager integration ✅ **GA4** Event tag configuration ✅ Custom event triggers ✅ Event parameter mapping ✅ Production tracking validation
-
-Phase 4 transforms the project from an attribution-aware lead system into a complete conversion measurement platform where application events, database records, Google Tag Manager, Google Analytics 4, and Google Ads are connected through a structured tracking architecture. ```
-````
+Advertising Platform
+```

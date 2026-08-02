@@ -1,44 +1,46 @@
 "use client";
 
 import { useState } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 import { completeConversion, getConversion } from "@/lib/session";
 
 import type { CreateLeadInput } from "@/types/lead";
 
+import { saveLeadIdentity } from "@/lib/leadIdentity";
+
 export default function LeadForm() {
   const router = useRouter();
 
   const [formData, setFormData] = useState<CreateLeadInput>({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     phone: "",
+    country: "",
+    postalCode: "",
   });
 
   const [loading, setLoading] = useState(false);
+
   const [message, setMessage] = useState("");
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleChange(e: ChangeEvent<HTMLInputElement>) {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     setLoading(true);
+
     setMessage("");
 
     try {
-      /**
-       * Read active conversion journey.
-       *
-       * Single source of truth:
-       * conversion.attribution
-       */
       const conversion = getConversion();
 
       const attribution = conversion?.attribution ?? {};
@@ -46,16 +48,10 @@ export default function LeadForm() {
       const leadData: CreateLeadInput = {
         ...formData,
 
-        /**
-         * Landing context
-         */
         landingPage: attribution.landingPage,
 
         referrer: attribution.referrer,
 
-        /**
-         * Attribution
-         */
         gclid: attribution.gclid,
 
         utmSource: attribution.utmSource,
@@ -68,14 +64,8 @@ export default function LeadForm() {
 
         utmContent: attribution.utmContent,
 
-        /**
-         * Conversion identity
-         */
         conversionEventId: conversion?.eventId,
 
-        /**
-         * Device
-         */
         device: attribution.device,
       };
 
@@ -96,11 +86,25 @@ export default function LeadForm() {
       }
 
       /**
-       * Lead saved successfully.
+       * Store identity temporarily.
        *
-       * Unlock generate_lead
-       * on thank-you page.
+       * Used on thank-you page to create
+       * Google Ads Enhanced Conversion payload.
        */
+      saveLeadIdentity({
+        firstName: formData.firstName,
+
+        lastName: formData.lastName,
+
+        email: formData.email,
+
+        phone: formData.phone,
+
+        country: formData.country,
+
+        postalCode: formData.postalCode,
+      });
+
       completeConversion();
 
       router.push("/thank-you");
@@ -125,9 +129,18 @@ export default function LeadForm() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
-          name="name"
-          placeholder="Your name"
-          value={formData.name}
+          name="firstName"
+          placeholder="First name"
+          value={formData.firstName}
+          onChange={handleChange}
+          required
+          className="w-full border rounded-lg px-4 py-3"
+        />
+
+        <input
+          name="lastName"
+          placeholder="Surname"
+          value={formData.lastName}
           onChange={handleChange}
           required
           className="w-full border rounded-lg px-4 py-3"
@@ -147,6 +160,22 @@ export default function LeadForm() {
           name="phone"
           placeholder="Your phone"
           value={formData.phone}
+          onChange={handleChange}
+          className="w-full border rounded-lg px-4 py-3"
+        />
+
+        <input
+          name="country"
+          placeholder="Country code (example: PK)"
+          value={formData.country}
+          onChange={handleChange}
+          className="w-full border rounded-lg px-4 py-3"
+        />
+
+        <input
+          name="postalCode"
+          placeholder="Postal code"
+          value={formData.postalCode}
           onChange={handleChange}
           className="w-full border rounded-lg px-4 py-3"
         />
