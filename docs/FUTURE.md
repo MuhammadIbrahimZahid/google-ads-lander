@@ -471,23 +471,23 @@ Difficulty:
 
 ---
 
+I have rewritten the later phases to align better with the Phase 6 changes. The main adjustments are:
+
+- Phase 6 is now recognized as the beginning of your CRM layer.
+- Phase 7 focuses on CRM-originated offline conversion signals.
+- Phase 8 introduces sales opportunities and closed-won revenue.
+- Phase 12 becomes a CRM integration and attribution platform rather than "building a CRM."
+- Phase 13 separates operational systems from analytics systems.
+
+---
+
 # Phase 7 — Offline Conversion Tracking
 
 ## Goal
 
-Send business outcomes back to Google Ads.
+Send real business outcomes from your CRM back to Google Ads.
 
-Current:
-
-```text
-Website
-
-↓
-
-Lead
-```
-
-New:
+Before Phase 7:
 
 ```text
 Website
@@ -503,30 +503,108 @@ CRM
 ↓
 
 Qualified Lead
+```
+
+After Phase 7:
+
+```text
+Website
+
+↓
+
+Lead
+
+↓
+
+CRM Status Changes
+
+↓
+
+Qualified Lead Event
+
+↓
+
+Offline Conversion Upload
 
 ↓
 
 Google Ads
 ```
 
-Website events measure lead generation.
+The important change:
 
-Offline conversions measure business outcomes.
+The conversion no longer happens because a user visited a page.
+
+It happens because the business took action.
 
 ---
 
 ## Example
 
-Instead of optimizing for:
+Before:
 
 ```text
 generate_lead
 ```
 
-Google Ads learns:
+Means:
+
+> Someone submitted a form.
+
+After:
 
 ```text
 qualified_lead
+```
+
+Means:
+
+> Sales reviewed the lead and determined it has real business value.
+
+---
+
+## New Capabilities
+
+- Upload CRM conversions to Google Ads
+- Connect online clicks with offline sales outcomes
+- Match conversions using identifiers such as:
+  - gclid
+  - event_id
+  - user identifiers
+
+- Prevent duplicate conversion uploads
+- Track conversion status changes
+
+---
+
+## Architecture
+
+```text
+Google Ad
+
+↓
+
+Website Visit
+
+↓
+
+Lead Created
+
+↓
+
+CRM
+
+↓
+
+Qualified Lead
+
+↓
+
+Offline Conversion Import
+
+↓
+
+Google Ads
 ```
 
 ---
@@ -535,7 +613,8 @@ qualified_lead
 
 - Offline conversion imports
 - CRM integration
-- Sales pipeline tracking
+- Conversion reconciliation
+- Business event tracking
 
 Difficulty:
 
@@ -549,7 +628,11 @@ Difficulty:
 
 Connect advertising clicks to actual customers and revenue.
 
-Pipeline:
+A qualified lead is valuable, but a paying customer is the real business outcome.
+
+---
+
+## New Customer Journey
 
 ```text
 Google Ad
@@ -560,7 +643,15 @@ Lead
 
 ↓
 
-Sales Process
+Qualified
+
+↓
+
+Sales Opportunity
+
+↓
+
+Closed Won
 
 ↓
 
@@ -573,23 +664,48 @@ Revenue
 
 ---
 
-## New Conversion
+## New Events
 
 Example:
 
 ```text
-purchase
+qualified_lead
 
-value: 5000 USD
+↓
+
+opportunity_created
+
+↓
+
+purchase
 ```
+
+with:
+
+```json
+{
+  "value": 5000,
+  "currency": "USD"
+}
+```
+
+---
+
+## New Capabilities
+
+- Track sales pipeline stages
+- Connect leads to customers
+- Associate revenue with campaigns
+- Understand customer acquisition cost
 
 ---
 
 ## Skills Learned
 
 - Revenue attribution
-- Customer lifecycle tracking
-- Business outcome measurement
+- Sales pipeline tracking
+- Customer lifecycle measurement
+- Business outcome tracking
 
 Difficulty:
 
@@ -606,30 +722,70 @@ Stop treating every conversion equally.
 Before:
 
 ```text
-Every lead = 1
+Every lead = 1 conversion
 ```
 
 After:
 
 ```text
-Lead A = $100
+Lead A = $100 value
 
-Lead B = $5000
+Lead B = $500 value
 
-Lead C = $20000
+Lead C = $20,000 value
 ```
 
 ---
 
-## Google Ads learns
+## Google Ads learns:
 
 Not:
 
-> Find more leads
+> Find more people who submit forms.
 
 But:
 
-> Find more valuable customers
+> Find more people who become valuable customers.
+
+---
+
+## Value Sources
+
+Conversion value can come from:
+
+### Actual Revenue
+
+Example:
+
+```text
+Customer purchased:
+
+$5000
+```
+
+---
+
+### Estimated Lead Value
+
+Example:
+
+```text
+Qualified lead:
+
+$300 expected value
+```
+
+---
+
+### Predicted Lifetime Value
+
+Example:
+
+```text
+Customer expected lifetime value:
+
+$20,000
+```
 
 ---
 
@@ -638,6 +794,7 @@ But:
 - Value-based bidding
 - ROAS optimization
 - Revenue-based optimization
+- Customer value modeling
 
 Difficulty:
 
@@ -649,16 +806,37 @@ Difficulty:
 
 ## Goal
 
-Build a tracking system that respects user privacy requirements.
+Build a tracking system that respects user privacy while maintaining measurement quality.
 
 ---
 
 ## New Capabilities
 
-- Consent handling
-- Tracking permission states
+- Consent state management
+- Tracking permission handling
 - Privacy-aware analytics
 - Consent Mode v2 concepts
+- Data collection rules
+
+---
+
+## Architecture
+
+```text
+User
+
+↓
+
+Consent Decision
+
+↓
+
+Tracking Layer
+
+↓
+
+GA4 / Google Ads
+```
 
 ---
 
@@ -678,7 +856,7 @@ Difficulty:
 
 ## Goal
 
-Reduce dependence on browser execution.
+Move important tracking logic from the browser to your backend.
 
 Current:
 
@@ -694,7 +872,7 @@ gtag()
 Google
 ```
 
-New:
+After:
 
 ```text
 Browser
@@ -709,7 +887,7 @@ Server
 
 ↓
 
-Measurement Protocol
+Event Processing
 
 ↓
 
@@ -718,22 +896,47 @@ GA4 / Google Ads
 
 ---
 
+## Improved Architecture
+
+```text
+Browser
+
+↓
+
+Backend API
+
+↓
+
+Event Queue
+
+↓
+
+Processing Worker
+
+↓
+
+Analytics Platforms
+```
+
+---
+
 ## Benefits
 
 - More reliable event delivery
 - Backend validation
-- Better control
-- Stronger privacy model
+- Better privacy control
+- Less dependence on browsers
+- Better event consistency
 
 ---
 
 ## Skills Learned
 
-- Backend APIs
-- Server events
-- Authentication
+- Server-side events
+- APIs
 - Event processing
 - Measurement Protocol
+- Backend architecture
 
 Difficulty:
 
@@ -741,13 +944,21 @@ Difficulty:
 
 ---
 
-# Phase 12 — Full CRM Attribution Platform
+# Phase 12 — CRM Integration & Attribution Platform
 
 ## Goal
 
-Build an agency-level marketing attribution system.
+Connect marketing systems, CRM systems, and revenue systems into one attribution platform.
 
-Final architecture:
+At this stage, the goal is not to build a CRM.
+
+Phase 6 already created the CRM foundation.
+
+The goal is integration.
+
+---
+
+## Final Architecture
 
 ```text
 Google Ads
@@ -758,15 +969,11 @@ Landing Page
 
 ↓
 
-Conversion Journey
-
-↓
-
 Tracking Layer
 
 ↓
 
-Database
+Lead Database
 
 ↓
 
@@ -774,7 +981,7 @@ CRM
 
 ↓
 
-Sales Status
+Sales Pipeline
 
 ↓
 
@@ -787,14 +994,52 @@ Google Ads
 
 ---
 
-## System Tracks
+## Supported CRM Models
 
-- Campaign performance
-- Keyword profitability
-- Lead quality
-- Sales outcomes
-- Revenue attribution
-- Customer lifetime value
+The system can work with:
+
+```text
+Custom CRM
+
+or
+
+External CRM
+```
+
+Examples:
+
+```text
+Your PostgreSQL CRM
+
+↓
+
+Later:
+
+HubSpot
+
+Salesforce
+
+Zoho
+```
+
+---
+
+## New Capabilities
+
+- CRM synchronization
+- Multi-system attribution
+- Lead lifecycle tracking
+- Sales outcome measurement
+- Campaign profitability analysis
+
+---
+
+## Skills Learned
+
+- System integration
+- API architecture
+- CRM synchronization
+- Attribution modeling
 
 Difficulty:
 
@@ -806,9 +1051,11 @@ Difficulty:
 
 ## Goal
 
-Move from tracking individual conversions to analyzing marketing intelligence.
+Move from tracking individual conversions to understanding marketing performance at a business level.
 
-Architecture:
+---
+
+## Architecture
 
 ```text
 Google Ads
@@ -823,7 +1070,7 @@ CRM
 
 ↓
 
-Revenue Database
+Operational Database
 
 ↓
 
@@ -836,12 +1083,39 @@ Dashboards
 
 ---
 
+## Why Separate a Data Warehouse?
+
+Application databases answer:
+
+> "What is happening now?"
+
+Example:
+
+```text
+What is this customer's current status?
+```
+
+---
+
+Data warehouses answer:
+
+> "What happened over time?"
+
+Example:
+
+```text
+Which campaign generated the most revenue last year?
+```
+
+---
+
 ## Questions Answered
 
-- Which keyword creates the most revenue?
-- Which campaign produces the best customers?
-- Which landing page performs best?
-- Which sales process converts better?
+- Which keyword produces profitable customers?
+- Which campaigns generate the highest revenue?
+- Which landing pages create quality leads?
+- Which sales processes perform best?
+- What is customer lifetime value?
 
 ---
 
@@ -849,6 +1123,7 @@ Dashboards
 
 - Data engineering
 - SQL analytics
+- Business intelligence
 - Marketing intelligence
 - Reporting systems
 
@@ -858,7 +1133,7 @@ Difficulty:
 
 ---
 
-# Final Learning Path
+# Updated Final Learning Path
 
 ```text
 Phase 1
@@ -882,12 +1157,12 @@ Google Tag Manager + Data Layer
 ↓
 
 Phase 5
-Enhanced Conversions for Leads
+Enhanced Conversions
 
 ↓
 
 Phase 6
-Qualified Lead Tracking
+CRM Lifecycle Tracking
 
 ↓
 
@@ -917,7 +1192,7 @@ Server-Side Tracking
 ↓
 
 Phase 12
-CRM Attribution Platform
+CRM Integration & Attribution Platform
 
 ↓
 
@@ -927,14 +1202,14 @@ Marketing Intelligence & Data Warehouse
 
 ---
 
-## Evolution of the Conversion Journey
+# Final Evolution
 
 ```text
 Click
 
 ↓
 
-Conversion Journey
+Conversion
 
 ↓
 
@@ -946,6 +1221,10 @@ Qualified Lead
 
 ↓
 
+Opportunity
+
+↓
+
 Customer
 
 ↓
@@ -954,47 +1233,19 @@ Revenue
 
 ↓
 
-Marketing Intelligence
+Business Intelligence
 ```
 
----
-
-The progression is:
+The system evolves from:
 
 ```text
-Track a click
-
-↓
-
-Track a conversion
-
-↓
-
-Track a person
-
-↓
-
-Track a lead
-
-↓
-
-Track lead quality
-
-↓
-
-Track revenue
-
-↓
-
-Optimize advertising using business value
-
-↓
-
-Build marketing intelligence
+"Did someone click?"
 ```
 
-Phase 1 established the browser-based tracking foundation.
+to:
 
-Phase 2 introduced validated lead capture and first-party data storage.
+```text
+"Did this advertising investment create profitable customers?"
+```
 
-The remaining phases evolve the same conversion journey into a complete first-party marketing attribution platform capable of connecting advertising spend with qualified leads, customers, revenue, and long-term business value.
+This structure now matches how modern marketing attribution platforms are actually built: first capture data, then connect business outcomes, then optimize advertising based on real value.
