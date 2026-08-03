@@ -3,8 +3,12 @@ import pool from "@/lib/db";
 import type { CreateLeadInput } from "@/types/lead";
 
 export async function createLead(data: CreateLeadInput) {
+  const client = await pool.connect();
+
   try {
-    const result = await pool.query(
+    await client.query("BEGIN");
+
+    const leadResult = await client.query(
       `
       INSERT INTO public.leads (
         first_name,
@@ -87,10 +91,49 @@ export async function createLead(data: CreateLeadInput) {
       ],
     );
 
-    return result.rows[0];
+    const lead = leadResult.rows[0];
+
+    await client.query(
+      `
+      INSERT INTO public.lifecycle_events
+      (
+        event_id,
+        lead_id,
+        event_name,
+        metadata
+      )
+
+      VALUES
+      (
+        $1,
+        $2,
+        $3,
+        $4
+      );
+      `,
+      [
+        data.conversionEventId,
+
+        lead.id,
+
+        "lead_created",
+
+        {
+          source: "website",
+        },
+      ],
+    );
+
+    await client.query("COMMIT");
+
+    return lead;
   } catch (error) {
-    console.error("Failed to create lead:", error);
+    await client.query("ROLLBACK");
+
+    console.error("Failed to create lead transaction:", error);
 
     throw error;
+  } finally {
+    client.release();
   }
 }
