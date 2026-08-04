@@ -97,7 +97,7 @@ export default function PrivacyPolicyPage() {
             handled, please contact us at:
           </p>
 
-          <p>your-email@example.com</p>
+          <p>buttibrahim848@gmail.com</p>
         </section>
       </div>
     </main>
