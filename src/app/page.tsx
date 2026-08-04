@@ -40,12 +40,24 @@ export default function Home() {
       {/* HERO SECTION */}
       <section className="max-w-6xl mx-auto px-6 py-20 flex flex-col items-center text-center">
         <h1 className="text-4xl md:text-6xl font-bold">
-          Build & Track Google Ads Conversions
+          Offline Conversion Uploader
         </h1>
 
-        <p className="mt-6 text-gray-600 max-w-2xl">
-          Learn how real conversion tracking works using Next.js, GA4, GTM, and
-          Google Ads.
+        <p className="mt-6 text-gray-600 max-w-3xl">
+          Offline Conversion Uploader is an internal marketing tool that
+          connects CRM lead qualification data with Google Ads.
+        </p>
+
+        <p className="mt-4 text-gray-600 max-w-3xl">
+          The application uploads qualified lead conversion events from our
+          database to Google Ads using the Google Ads API, allowing marketing
+          teams to optimize campaigns based on qualified leads instead of only
+          form submissions.
+        </p>
+
+        <p className="mt-4 text-gray-600 max-w-3xl">
+          This tool is used internally by our marketing and sales team to
+          improve lead quality measurement and advertising performance.
         </p>
 
         <div className="mt-10 flex gap-4">
@@ -62,28 +74,35 @@ export default function Home() {
 
       {/* FEATURES */}
       <section className="bg-gray-50 py-20">
-        <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-8">
+        <div className="max-w-6xl mx-auto px-6 grid md:grid-3 gap-8">
           <div className="bg-white p-6 rounded-xl shadow-sm">
-            <h3 className="font-semibold text-lg">Conversion Tracking</h3>
+            <h3 className="font-semibold text-lg">
+              Google Ads Offline Conversions
+            </h3>
 
             <p className="text-gray-600 mt-2">
-              Learn how Google Ads tracks real user actions.
+              Upload qualified lead outcomes from internal systems to Google Ads
+              for optimization.
             </p>
           </div>
 
           <div className="bg-white p-6 rounded-xl shadow-sm">
-            <h3 className="font-semibold text-lg">GA4 Integration</h3>
+            <h3 className="font-semibold text-lg">CRM Lead Qualification</h3>
 
             <p className="text-gray-600 mt-2">
-              Understand analytics events and attribution.
+              Connect sales qualification events with advertising performance
+              data.
             </p>
           </div>
 
           <div className="bg-white p-6 rounded-xl shadow-sm">
-            <h3 className="font-semibold text-lg">Tag Manager</h3>
+            <h3 className="font-semibold text-lg">
+              Google Ads API Integration
+            </h3>
 
             <p className="text-gray-600 mt-2">
-              Manage all tracking without touching code later.
+              Send qualified conversion events programmatically through the
+              Google Ads API.
             </p>
           </div>
         </div>
@@ -91,16 +110,18 @@ export default function Home() {
 
       {/* CTA SECTION */}
       <section className="max-w-4xl mx-auto text-center py-24 px-6">
-        <h2 className="text-3xl font-bold">
-          Ready to build real conversion tracking?
-        </h2>
+        <h2 className="text-3xl font-bold">Improve lead quality measurement</h2>
 
         <p className="text-gray-600 mt-4">
-          Submit your details below to complete the conversion journey.
+          Connect qualified business outcomes with Google Ads campaign
+          optimization.
         </p>
 
-        <button className="mt-8 px-8 py-4 bg-black text-white rounded-xl">
-          Continue Learning
+        <button
+          onClick={handleClick}
+          className="mt-8 px-8 py-4 bg-black text-white rounded-xl"
+        >
+          Continue
         </button>
       </section>
 
