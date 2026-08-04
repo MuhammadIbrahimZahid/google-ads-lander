@@ -74,7 +74,7 @@ export default function Home() {
 
       {/* FEATURES */}
       <section className="bg-gray-50 py-20">
-        <div className="max-w-6xl mx-auto px-6 grid md:grid-3 gap-8">
+        <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-8">
           <div className="bg-white p-6 rounded-xl shadow-sm">
             <h3 className="font-semibold text-lg">
               Google Ads Offline Conversions
