@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Offline Conversion Uploader",
   description:
-    "Offline Conversion Uploader is an internal marketing tool that uploads qualified lead conversion events from our CRM/database to Google Ads using the Google Ads API.",
+    "Offline Conversion Uploader is an internal marketing tool that connects CRM lead qualification data with Google Ads. It uploads qualified lead conversion events using the Google Ads API so campaigns can optimize toward higher-quality leads.",
   verification: {
     google: "GZdgo9v425_MDtO3d6a2v3UyyrXLlZhdgeWft6XEirk",
   },
