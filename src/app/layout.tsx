@@ -20,6 +20,13 @@ export const metadata: Metadata = {
   verification: {
     google: "GZdgo9v425_MDtO3d6a2v3UyyrXLlZhdgeWft6XEirk",
   },
+  openGraph: {
+    title: "Offline Conversion Uploader",
+    description:
+      "Internal tool for uploading qualified lead conversion events from CRM systems to Google Ads using the Google Ads API.",
+    type: "website",
+    url: "https://google-ads-lander.vercel.app/",
+  },
 };
 
 export default function RootLayout({
