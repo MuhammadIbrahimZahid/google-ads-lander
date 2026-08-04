@@ -126,6 +126,12 @@ export default function Home() {
       </section>
 
       <LeadModal open={showForm} onClose={() => setShowForm(false)} />
+
+      <footer className="mt-20 text-center text-sm text-gray-500">
+        <a href="/privacy" className="underline">
+          Privacy Policy
+        </a>
+      </footer>
     </main>
   );
 }
