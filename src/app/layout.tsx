@@ -14,9 +14,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Google Ads Lander",
+  title: "Offline Conversion Uploader",
   description:
-    "A Next.js demo project showcasing Google Analytics 4 and Google Ads conversion tracking with a production-oriented architecture.",
+    "Offline Conversion Uploader is an internal marketing tool that uploads qualified lead conversion events from our CRM/database to Google Ads using the Google Ads API.",
+  verification: {
+    google: "GZdgo9v425_MDtO3d6a2v3UyyrXLlZhdgeWft6XEirk",
+  },
 };
 
 export default function RootLayout({
