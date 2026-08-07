@@ -1,0 +1,3304 @@
+﻿
+==================================================
+FILE: src\app\layout.tsx
+==================================================
+
+import type { Metadata } from "next";
+import Script from "next/script";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "Google Ads Lander",
+  description:
+    "A Next.js demo project showcasing Google Analytics 4 and Google Ads conversion tracking with a production-oriented architecture.",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
+
+  return (
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
+      {GTM_ID && (
+        <>
+          {/* Initialize GTM dataLayer before loading GTM */}
+          <Script id="google-tag-manager-init" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+
+              window.dataLayer.push({
+                'gtm.start': new Date().getTime(),
+                event: 'gtm.js'
+              });
+            `}
+          </Script>
+
+          {/* Load Google Tag Manager */}
+          <Script
+            id="google-tag-manager"
+            strategy="afterInteractive"
+            src={`https://www.googletagmanager.com/gtm.js?id=${GTM_ID}`}
+          />
+        </>
+      )}
+
+      <body className="min-h-full flex flex-col">{children}</body>
+    </html>
+  );
+}
+
+
+==================================================
+FILE: src\app\page.tsx
+==================================================
+
+"use client";
+
+import { ensureConversion } from "@/lib/session";
+import { trackHeroCTAClick } from "@/lib/analytics";
+import { hasTrackedHeroClick, markHeroClickTracked } from "@/lib/tracking";
+import { useEffect, useState } from "react";
+import LeadModal from "@/components/LeadModal";
+import { captureAttribution, getAttribution } from "@/lib/attribution";
+import { captureFirstTouchAttribution } from "@/lib/firstTouchAttribution";
+
+export default function Home() {
+  const [showForm, setShowForm] = useState(false);
+
+  useEffect(() => {
+    captureAttribution();
+
+    const attribution = getAttribution();
+
+    if (attribution) {
+      captureFirstTouchAttribution(attribution);
+    }
+  }, []);
+
+  const handleClick = () => {
+    ensureConversion();
+
+    if (!hasTrackedHeroClick()) {
+      trackHeroCTAClick({
+        button_name: "Get Started",
+      });
+
+      markHeroClickTracked();
+    }
+
+    setShowForm(true);
+  };
+
+  return (
+    <main className="min-h-screen bg-white text-gray-900">
+      {/* HERO SECTION */}
+      <section className="max-w-6xl mx-auto px-6 py-20 flex flex-col items-center text-center">
+        <h1 className="text-4xl md:text-6xl font-bold">
+          Build & Track Google Ads Conversions
+        </h1>
+
+        <p className="mt-6 text-gray-600 max-w-2xl">
+          Learn how real conversion tracking works using Next.js, GA4, GTM, and
+          Google Ads.
+        </p>
+
+        <div className="mt-10 flex gap-4">
+          <button
+            onClick={handleClick}
+            className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700"
+          >
+            Get Started
+          </button>
+
+          <button className="px-6 py-3 border rounded-xl">View Demo</button>
+        </div>
+      </section>
+
+      {/* FEATURES */}
+      <section className="bg-gray-50 py-20">
+        <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-8">
+          <div className="bg-white p-6 rounded-xl shadow-sm">
+            <h3 className="font-semibold text-lg">Conversion Tracking</h3>
+
+            <p className="text-gray-600 mt-2">
+              Learn how Google Ads tracks real user actions.
+            </p>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-sm">
+            <h3 className="font-semibold text-lg">GA4 Integration</h3>
+
+            <p className="text-gray-600 mt-2">
+              Understand analytics events and attribution.
+            </p>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-sm">
+            <h3 className="font-semibold text-lg">Tag Manager</h3>
+
+            <p className="text-gray-600 mt-2">
+              Manage all tracking without touching code later.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA SECTION */}
+      <section className="max-w-4xl mx-auto text-center py-24 px-6">
+        <h2 className="text-3xl font-bold">
+          Ready to build real conversion tracking?
+        </h2>
+
+        <p className="text-gray-600 mt-4">
+          Submit your details below to complete the conversion journey.
+        </p>
+
+        <button className="mt-8 px-8 py-4 bg-black text-white rounded-xl">
+          Continue Learning
+        </button>
+      </section>
+
+      <LeadModal open={showForm} onClose={() => setShowForm(false)} />
+    </main>
+  );
+}
+
+
+==================================================
+FILE: src\app\admin\conversions\page.tsx
+==================================================
+
+import { getAdminConversions } from "@/services/adminConversions";
+
+export default async function AdminConversionsPage() {
+  const conversions = await getAdminConversions();
+
+  return (
+    <main style={{ padding: "40px" }}>
+      <h1>Admin Conversions</h1>
+
+      <div style={{ marginTop: "30px" }}>
+        {conversions.map((conversion) => (
+          <div
+            key={conversion.id}
+            style={{
+              border: "1px solid #ddd",
+              padding: "20px",
+              marginBottom: "15px",
+              borderRadius: "8px",
+            }}
+          >
+            <h2>Lead #{conversion.lead_id}</h2>
+
+            <p>
+              Name: {conversion.first_name} {conversion.last_name}
+            </p>
+
+            <p>Status: {conversion.upload_status}</p>
+
+            <p>Google Job ID: {conversion.google_job_id ?? "N/A"}</p>
+
+            <p>Error Code: {conversion.google_error_code ?? "None"}</p>
+
+            <p>Error Message: {conversion.google_error_message ?? "None"}</p>
+
+            <p>
+              Uploaded:{" "}
+              {conversion.uploaded_at
+                ? new Date(conversion.uploaded_at).toLocaleString()
+                : "Not uploaded"}
+            </p>
+
+            <p>
+              Reconciliation:
+              {conversion.reconciliation_status}
+            </p>
+
+            <p>
+              Reconciled:
+              {conversion.reconciled_at
+                ? new Date(conversion.reconciled_at).toLocaleString()
+                : "Not reconciled"}
+            </p>
+
+            <p>
+              Notes:
+              {conversion.reconciliation_notes ?? "None"}
+            </p>
+          </div>
+        ))}
+      </div>
+    </main>
+  );
+}
+
+
+==================================================
+FILE: src\app\admin\leads\page.tsx
+==================================================
+
+import { getAdminLeads } from "@/services/adminLeads";
+import StatusButtons from "./StatusButtons";
+
+export default async function AdminLeadsPage() {
+  const leads = await getAdminLeads();
+
+  return (
+    <main
+      style={{
+        padding: "40px",
+      }}
+    >
+      <h1>Admin Leads</h1>
+
+      <div
+        style={{
+          marginTop: "30px",
+          display: "grid",
+          gap: "20px",
+        }}
+      >
+        {leads.map((lead) => (
+          <div
+            key={lead.id}
+            style={{
+              border: "1px solid #ddd",
+              padding: "20px",
+              borderRadius: "8px",
+            }}
+          >
+            <h2>Lead #{lead.id}</h2>
+
+            <p>
+              Name: {lead.first_name} {lead.last_name}
+            </p>
+
+            <p>Email: {lead.email}</p>
+
+            <p>Phone: {lead.phone ?? "N/A"}</p>
+
+            <p>Status: {lead.status}</p>
+
+            <StatusButtons leadId={lead.id} currentStatus={lead.status} />
+
+            <p>Created: {new Date(lead.created_at).toLocaleString()}</p>
+          </div>
+        ))}
+      </div>
+    </main>
+  );
+}
+
+
+==================================================
+FILE: src\app\admin\leads\StatusButtons.tsx
+==================================================
+
+"use client";
+
+import { useState } from "react";
+
+import { pushToDataLayer } from "@/lib/dataLayer";
+
+interface StatusButtonsProps {
+  leadId: number;
+  currentStatus: string;
+}
+
+const statuses = ["new", "contacted", "qualified", "disqualified"];
+
+export default function StatusButtons({
+  leadId,
+  currentStatus,
+}: StatusButtonsProps) {
+  const [status, setStatus] = useState(currentStatus);
+
+  const [loading, setLoading] = useState(false);
+
+  async function updateStatus(newStatus: string) {
+    if (newStatus === status) {
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`/api/leads/${leadId}/status`, {
+        method: "PATCH",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          status: newStatus,
+          changedBy: "admin",
+          reason: "Admin CRM update",
+          metadata: {
+            source: "admin_crm",
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update status");
+      }
+
+      const eventId = crypto.randomUUID();
+
+      pushToDataLayer(`lead_${newStatus}`, {
+        event_id: eventId,
+
+        lead_id: leadId,
+
+        previous_status: status,
+
+        new_status: newStatus,
+      });
+
+      setStatus(newStatus);
+    } catch (error) {
+      console.error(error);
+
+      alert("Status update failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div
+      style={{
+        marginTop: "15px",
+        display: "flex",
+        gap: "10px",
+        flexWrap: "wrap",
+      }}
+    >
+      {statuses.map((item) => (
+        <button
+          key={item}
+          disabled={loading}
+          onClick={() => updateStatus(item)}
+          style={{
+            padding: "8px 12px",
+            cursor: "pointer",
+            background: item === status ? "#111" : "#eee",
+            color: item === status ? "#fff" : "#000",
+          }}
+        >
+          {item}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+
+==================================================
+FILE: src\app\api\jobs\offline-conversion-upload\route.ts
+==================================================
+
+import { NextResponse } from "next/server";
+
+import { runOfflineConversionUploadJob } from "@/services/offlineConversionUploadJob";
+
+export async function POST() {
+  try {
+    const result = await runOfflineConversionUploadJob();
+
+    return NextResponse.json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    console.error("Offline conversion upload job failed:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: error instanceof Error ? error.message : "Upload job failed.",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+}
+
+
+==================================================
+FILE: src\app\api\leads\route.ts
+==================================================
+
+import { NextResponse } from "next/server";
+
+import { createLead } from "@/services/leads";
+
+import type { CreateLeadInput } from "@/types/lead";
+
+function normalizePhone(phone?: string) {
+  if (!phone) {
+    return undefined;
+  }
+
+  const cleaned = phone.replace(/\s+/g, "");
+
+  return cleaned || undefined;
+}
+
+function normalizeOptionalText(value?: string) {
+  if (!value) {
+    return undefined;
+  }
+
+  const cleaned = value.trim();
+
+  return cleaned || undefined;
+}
+
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function isTooLong(value: string | undefined, max: number) {
+  return value ? value.length > max : false;
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = (await request.json()) as Partial<CreateLeadInput>;
+
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+
+      country,
+      postalCode,
+
+      landingPage,
+      referrer,
+
+      gclid,
+
+      utmSource,
+      utmMedium,
+      utmCampaign,
+      utmTerm,
+      utmContent,
+
+      device,
+
+      conversionEventId,
+
+      debugSource,
+      debugCampaign,
+      debugClickId,
+    } = body;
+
+    const cleanFirstName =
+      typeof firstName === "string" ? firstName.trim() : "";
+
+    const cleanLastName = typeof lastName === "string" ? lastName.trim() : "";
+
+    const cleanEmail =
+      typeof email === "string" ? email.trim().toLowerCase() : "";
+
+    const cleanCountry = normalizeOptionalText(country);
+
+    const cleanPostalCode = normalizeOptionalText(postalCode);
+
+    if (!cleanFirstName) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "First name is required.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (!cleanLastName) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Surname is required.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (!cleanEmail) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Email is required.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (!isValidEmail(cleanEmail)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid email address.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (isTooLong(cleanFirstName, 100)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "First name is too long.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (isTooLong(cleanLastName, 100)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Surname is too long.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (isTooLong(cleanEmail, 255)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Email is too long.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (isTooLong(cleanCountry, 100)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Country value is too long.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (isTooLong(cleanPostalCode, 30)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Postal code is too long.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    const normalizedPhone = normalizePhone(phone);
+
+    if (isTooLong(normalizedPhone, 30)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Phone number is too long.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    const lead = await createLead({
+      firstName: cleanFirstName,
+
+      lastName: cleanLastName,
+
+      email: cleanEmail,
+
+      phone: normalizedPhone,
+
+      country: cleanCountry,
+
+      postalCode: cleanPostalCode,
+
+      landingPage,
+
+      referrer,
+
+      gclid,
+
+      utmSource,
+
+      utmMedium,
+
+      utmCampaign,
+
+      utmTerm,
+
+      utmContent,
+
+      device,
+
+      conversionEventId,
+
+      debugSource,
+
+      debugCampaign,
+
+      debugClickId,
+    });
+
+    return NextResponse.json({
+      success: true,
+      lead,
+    });
+  } catch (error) {
+    console.error("Lead API error:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Failed to create lead.",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+}
+
+
+==================================================
+FILE: src\app\api\leads\[id]\status\route.ts
+==================================================
+
+import { NextResponse } from "next/server";
+
+import { changeLeadStatus } from "@/services/leadLifecycle";
+
+interface RouteParams {
+  params: Promise<{
+    id: string;
+  }>;
+}
+
+export async function PATCH(request: Request, { params }: RouteParams) {
+  try {
+    const { id } = await params;
+    const leadId = Number(id);
+
+    if (!Number.isInteger(leadId)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid lead id.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    const body = await request.json();
+
+    const { status, changedBy, reason, metadata } = body;
+
+    if (!status || typeof status !== "string") {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Status is required.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    const lead = await changeLeadStatus({
+      leadId,
+
+      newStatus: status,
+
+      changedBy,
+
+      reason,
+
+      metadata,
+    });
+
+    return NextResponse.json({
+      success: true,
+
+      lead,
+    });
+  } catch (error) {
+    console.error("Lead status update API error:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to update lead status.",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+}
+
+
+==================================================
+FILE: src\app\privacy\page.tsx
+==================================================
+
+import Link from "next/link";
+
+export default function PrivacyPolicyPage() {
+  return (
+    <main className="min-h-screen bg-white px-6 py-12 text-gray-900">
+      {" "}
+      <div className="mx-auto max-w-3xl space-y-8">
+        {" "}
+        <h1 className="text-3xl font-bold">Privacy Policy </h1>
+        <p>Last updated: August 2026</p>
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold">Overview</h2>
+
+          <p>
+            This privacy policy explains how information is collected and used
+            when you interact with this website. We collect information provided
+            by users through our lead forms to respond to inquiries, manage
+            customer relationships, and improve our services.
+          </p>
+        </section>
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold">Information We Collect</h2>
+
+          <p>We may collect information such as:</p>
+
+          <ul className="list-disc space-y-1 pl-6">
+            <li>Name and contact information</li>
+            <li>Email address and phone number</li>
+            <li>Information submitted through website forms</li>
+            <li>
+              Advertising attribution information such as Google Click ID
+              (GCLID), campaign information, and referral details
+            </li>
+          </ul>
+        </section>
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold">How We Use Information</h2>
+
+          <p>Information collected through this website is used to:</p>
+
+          <ul className="list-disc space-y-1 pl-6">
+            <li>Respond to customer inquiries</li>
+            <li>Manage leads and customer communications</li>
+            <li>Improve website performance and user experience</li>
+            <li>
+              Measure advertising effectiveness and understand which marketing
+              activities generate qualified leads
+            </li>
+          </ul>
+        </section>
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold">
+            Google Ads and Conversion Measurement
+          </h2>
+
+          <p>
+            We use Google Ads measurement technologies to understand the
+            effectiveness of our advertising campaigns.
+          </p>
+
+          <p>
+            When a user submits a lead form, relevant attribution information,
+            including Google Click ID (GCLID) when available, may be securely
+            stored with the lead record.
+          </p>
+
+          <p>
+            If a lead later becomes a qualified business opportunity, we may
+            send conversion information to Google Ads through the Google Ads
+            API. This helps measure advertising performance and improve campaign
+            optimization.
+          </p>
+        </section>
+        <section className="space-y-3">
+          <h2 className="text-xl-semibold">Data Protection</h2>
+
+          <p>
+            We take reasonable measures to protect collected information and
+            limit access to authorized systems and personnel.
+          </p>
+        </section>
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold">Third-Party Services</h2>
+
+          <p>
+            We may use third-party services such as Google services for
+            analytics, advertising measurement, and conversion tracking. These
+            providers process information according to their own privacy
+            policies.
+          </p>
+        </section>
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold">Contact</h2>
+
+          <p>
+            For questions about this privacy policy or how your information is
+            handled, please contact us at:
+          </p>
+
+          <p>your-email@example.com</p>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+
+==================================================
+FILE: src\app\thank-you\page.tsx
+==================================================
+
+"use client";
+
+import { useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+import { canConvert, consumeConversion, getConversion } from "@/lib/session";
+
+import { trackGenerateLead } from "@/lib/analytics";
+
+import { getLeadIdentity, clearLeadIdentity } from "@/lib/leadIdentity";
+
+import { buildEnhancedConversionData } from "@/lib/enhancedConversions";
+
+function waitForGTM(timeout = 3000) {
+  return new Promise<boolean>((resolve) => {
+    const start = Date.now();
+
+    function check() {
+      if (typeof window !== "undefined" && Array.isArray(window.dataLayer)) {
+        resolve(true);
+        return;
+      }
+
+      if (Date.now() - start >= timeout) {
+        resolve(false);
+        return;
+      }
+
+      setTimeout(check, 100);
+    }
+
+    check();
+  });
+}
+
+export default function ThankYouPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    async function sendConversion() {
+      if (!canConvert()) {
+        router.replace("/");
+        return;
+      }
+
+      const conversion = getConversion();
+
+      if (!conversion || conversion.fired) {
+        router.replace("/");
+        return;
+      }
+
+      const gtmReady = await waitForGTM();
+
+      if (!gtmReady) {
+        console.warn("GTM not ready. Conversion not sent.");
+
+        return;
+      }
+
+      const leadIdentity = getLeadIdentity();
+
+      const enhancedConversionData = leadIdentity
+        ? await buildEnhancedConversionData(leadIdentity)
+        : undefined;
+
+      trackGenerateLead({
+        lead_source: "landing_page",
+
+        event_id: conversion.eventId,
+
+        user_data: enhancedConversionData,
+      });
+
+      console.log("generate_lead sent", conversion.eventId);
+
+      clearLeadIdentity();
+
+      setTimeout(() => {
+        consumeConversion();
+      }, 1000);
+    }
+
+    sendConversion();
+  }, [router]);
+
+  return (
+    <main className="min-h-screen flex items-center justify-center bg-green-50 px-6">
+      <div className="max-w-xl text-center bg-white p-10 rounded-2xl shadow-sm border">
+        <div className="text-5xl mb-4">🎉</div>
+
+        <h1 className="text-3xl font-bold text-gray-900">Thank You!</h1>
+
+        <p className="mt-4 text-gray-600">
+          Your lead has been submitted successfully.
+        </p>
+
+        <div className="mt-6 text-sm text-gray-500">
+          GA4 has received a <code>generate_lead</code> event.
+        </div>
+
+        <Link
+          href="/"
+          className="inline-block mt-8 px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800"
+        >
+          Back to Home
+        </Link>
+      </div>
+    </main>
+  );
+}
+
+
+==================================================
+FILE: src\components\LeadForm.tsx
+==================================================
+
+"use client";
+
+import { useState } from "react";
+import type { ChangeEvent, FormEvent } from "react";
+import { useRouter } from "next/navigation";
+
+import { completeConversion, getConversion } from "@/lib/session";
+
+import type { CreateLeadInput } from "@/types/lead";
+
+import { saveLeadIdentity } from "@/lib/leadIdentity";
+
+export default function LeadForm() {
+  const router = useRouter();
+
+  const [formData, setFormData] = useState<CreateLeadInput>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    country: "",
+    postalCode: "",
+  });
+
+  const [loading, setLoading] = useState(false);
+
+  const [message, setMessage] = useState("");
+
+  function handleChange(e: ChangeEvent<HTMLInputElement>) {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  }
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    setLoading(true);
+
+    setMessage("");
+
+    try {
+      const conversion = getConversion();
+
+      const attribution = conversion?.attribution ?? {};
+
+      const leadData: CreateLeadInput = {
+        ...formData,
+
+        landingPage: attribution.landingPage,
+
+        referrer: attribution.referrer,
+
+        gclid: attribution.gclid,
+
+        utmSource: attribution.utmSource,
+
+        utmMedium: attribution.utmMedium,
+
+        utmCampaign: attribution.utmCampaign,
+
+        utmTerm: attribution.utmTerm,
+
+        utmContent: attribution.utmContent,
+
+        conversionEventId: conversion?.eventId,
+
+        device: attribution.device,
+      };
+
+      const response = await fetch("/api/leads", {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify(leadData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Something went wrong");
+      }
+
+      /**
+       * Store identity temporarily.
+       *
+       * Used on thank-you page to create
+       * Google Ads Enhanced Conversion payload.
+       */
+      saveLeadIdentity({
+        firstName: formData.firstName,
+
+        lastName: formData.lastName,
+
+        email: formData.email,
+
+        phone: formData.phone,
+
+        country: formData.country,
+
+        postalCode: formData.postalCode,
+      });
+
+      completeConversion();
+
+      router.push("/thank-you");
+    } catch (error) {
+      console.error(error);
+
+      if (error instanceof Error) {
+        setMessage(error.message);
+      } else {
+        setMessage("Failed to submit lead.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <section className="p-8">
+      <h2 className="text-2xl font-bold mb-6 text-center">
+        Complete Your Details
+      </h2>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <input
+          name="firstName"
+          placeholder="First name"
+          value={formData.firstName}
+          onChange={handleChange}
+          required
+          className="w-full border rounded-lg px-4 py-3"
+        />
+
+        <input
+          name="lastName"
+          placeholder="Surname"
+          value={formData.lastName}
+          onChange={handleChange}
+          required
+          className="w-full border rounded-lg px-4 py-3"
+        />
+
+        <input
+          name="email"
+          type="email"
+          placeholder="Your email"
+          value={formData.email}
+          onChange={handleChange}
+          required
+          className="w-full border rounded-lg px-4 py-3"
+        />
+
+        <input
+          name="phone"
+          placeholder="Your phone"
+          value={formData.phone}
+          onChange={handleChange}
+          className="w-full border rounded-lg px-4 py-3"
+        />
+
+        <input
+          name="country"
+          placeholder="Country code (example: PK)"
+          value={formData.country}
+          onChange={handleChange}
+          className="w-full border rounded-lg px-4 py-3"
+        />
+
+        <input
+          name="postalCode"
+          placeholder="Postal code"
+          value={formData.postalCode}
+          onChange={handleChange}
+          className="w-full border rounded-lg px-4 py-3"
+        />
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+        >
+          {loading ? "Submitting..." : "Submit"}
+        </button>
+      </form>
+
+      {message && (
+        <p className="mt-4 text-center text-sm text-gray-600">{message}</p>
+      )}
+    </section>
+  );
+}
+
+
+==================================================
+FILE: src\components\LeadModal.tsx
+==================================================
+
+"use client";
+
+import LeadForm from "@/components/LeadForm";
+
+interface LeadModalProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export default function LeadModal({ open, onClose }: LeadModalProps) {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+
+      {/* Modal */}
+      <div className="relative z-10 w-full max-w-xl rounded-2xl bg-white shadow-xl">
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 text-gray-500 hover:text-gray-900"
+          aria-label="Close"
+        >
+          ✕
+        </button>
+
+        <LeadForm />
+      </div>
+    </div>
+  );
+}
+
+
+==================================================
+FILE: src\constants\analytics.ts
+==================================================
+
+export const AnalyticsEvents = {
+  GENERATE_LEAD: "generate_lead",
+  HERO_CTA_CLICK: "hero_cta_click",
+} as const;
+
+
+==================================================
+FILE: src\lib\analytics.ts
+==================================================
+
+import { AnalyticsEvents } from "@/constants/analytics";
+import { pushToDataLayer } from "./dataLayer";
+
+import type { GenerateLeadParams, HeroCTAParams } from "@/types/analytics";
+
+/**
+ * Track successful lead generation.
+ *
+ * Fires only after:
+ *
+ * 1. Lead is saved successfully.
+ * 2. Enhanced conversion data is prepared.
+ *
+ * Sends:
+ *
+ * - GA4 generate_lead event data
+ * - Google Ads enhanced conversion user data
+ */
+export function trackGenerateLead(params: GenerateLeadParams) {
+  pushToDataLayer(AnalyticsEvents.GENERATE_LEAD, {
+    ...params,
+  });
+}
+
+/**
+ * Track hero CTA interaction.
+ *
+ * Used for measuring user intent
+ * before lead completion.
+ */
+export function trackHeroCTAClick(params: HeroCTAParams) {
+  pushToDataLayer(AnalyticsEvents.HERO_CTA_CLICK, {
+    ...params,
+  });
+}
+
+
+==================================================
+FILE: src\lib\attribution.ts
+==================================================
+
+import type { Attribution } from "@/types/attribution";
+
+const ATTRIBUTION_KEY = "attribution";
+
+/**
+ * Save current attribution.
+ */
+function saveAttribution(attribution: Attribution) {
+  sessionStorage.setItem(ATTRIBUTION_KEY, JSON.stringify(attribution));
+}
+
+/**
+ * Read attribution safely.
+ */
+function readAttribution(): Attribution | null {
+  const value = sessionStorage.getItem(ATTRIBUTION_KEY);
+
+  if (!value) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(value) as Attribution;
+  } catch {
+    sessionStorage.removeItem(ATTRIBUTION_KEY);
+
+    return null;
+  }
+}
+
+/**
+ * Capture attribution from landing page.
+ *
+ * Existing attribution is preserved.
+ */
+export function captureAttribution() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const existing = readAttribution();
+
+  /**
+   * Do not overwrite existing session attribution.
+   */
+  if (existing) {
+    return;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+
+  const attribution: Attribution = {
+    gclid: params.get("gclid") ?? undefined,
+
+    utmSource: params.get("utm_source") ?? undefined,
+
+    utmMedium: params.get("utm_medium") ?? undefined,
+
+    utmCampaign: params.get("utm_campaign") ?? undefined,
+
+    utmTerm: params.get("utm_term") ?? undefined,
+
+    utmContent: params.get("utm_content") ?? undefined,
+
+    referrer: document.referrer || undefined,
+
+    landingPage: window.location.pathname,
+
+    device: navigator.userAgent,
+  };
+
+  saveAttribution(attribution);
+}
+
+/**
+ * Get current session attribution.
+ */
+export function getAttribution(): Attribution | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return readAttribution();
+}
+
+/**
+ * Remove attribution.
+ */
+export function clearAttribution() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  sessionStorage.removeItem(ATTRIBUTION_KEY);
+}
+
+
+==================================================
+FILE: src\lib\dataLayer.ts
+==================================================
+
+import type { DataLayerEvent } from "@/types/dataLayer";
+
+declare global {
+  interface Window {
+    dataLayer?: DataLayerEvent[];
+  }
+}
+
+/**
+ * Ensure GTM dataLayer exists.
+ */
+function getDataLayer() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  window.dataLayer = window.dataLayer || [];
+
+  return window.dataLayer;
+}
+
+/**
+ * Push application events
+ * into Google Tag Manager dataLayer.
+ *
+ * The application does not know:
+ *
+ * - GA4 Measurement ID
+ * - Google Ads conversion ID
+ * - GTM tags
+ *
+ * GTM controls processing.
+ */
+export function pushToDataLayer<T extends object>(
+  eventName: string,
+  params?: T,
+) {
+  const dataLayer = getDataLayer();
+
+  if (!dataLayer) {
+    return;
+  }
+
+  const event: DataLayerEvent = {
+    event: eventName,
+
+    ...(params ?? {}),
+  };
+
+  if (process.env.NODE_ENV === "development") {
+    console.log("[dataLayer event]", event);
+  }
+
+  dataLayer.push(event);
+}
+
+
+==================================================
+FILE: src\lib\db.ts
+==================================================
+
+import { Pool } from "pg";
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+export default pool;
+
+
+==================================================
+FILE: src\lib\enhancedConversions.ts
+==================================================
+
+import type {
+  EnhancedConversionInput,
+  EnhancedConversionPayload,
+} from "@/types/enhancedConversion";
+
+import {
+  normalizeCountry,
+  normalizeEmail,
+  normalizePersonName,
+  normalizePhone,
+  normalizePostalCode,
+} from "@/lib/normalization";
+
+import { hashSHA256 } from "@/lib/hashing";
+
+/**
+ * Build an Enhanced Conversion payload.
+ *
+ * Flow:
+ *
+ * Raw customer data
+ *
+ * ↓
+ *
+ * Normalize
+ *
+ * ↓
+ *
+ * SHA-256 hash identity fields
+ *
+ * ↓
+ *
+ * Return GTM user_data payload
+ */
+export async function buildEnhancedConversionData(
+  input: EnhancedConversionInput,
+): Promise<EnhancedConversionPayload> {
+  const normalizedEmail = normalizeEmail(input.email);
+
+  const normalizedPhone = normalizePhone(input.phone);
+
+  const normalizedFirstName = normalizePersonName(input.firstName);
+
+  const normalizedLastName = normalizePersonName(input.lastName);
+
+  const normalizedCountry = normalizeCountry(input.country);
+
+  const normalizedPostalCode = normalizePostalCode(input.postalCode);
+
+  const payload: EnhancedConversionPayload = {
+    sha256_email_address: await hashSHA256(normalizedEmail),
+
+    sha256_phone_number: await hashSHA256(normalizedPhone),
+
+    address: {
+      sha256_first_name: await hashSHA256(normalizedFirstName),
+
+      sha256_last_name: await hashSHA256(normalizedLastName),
+
+      country: normalizedCountry,
+
+      postal_code: normalizedPostalCode,
+    },
+  };
+
+  return payload;
+}
+
+
+==================================================
+FILE: src\lib\firstTouchAttribution.ts
+==================================================
+
+import type { Attribution, FirstTouchAttribution } from "@/types/attribution";
+
+const FIRST_TOUCH_KEY = "first_touch_attribution";
+
+/**
+ * Save first-touch attribution.
+ */
+function saveFirstTouch(attribution: FirstTouchAttribution) {
+  try {
+    localStorage.setItem(FIRST_TOUCH_KEY, JSON.stringify(attribution));
+  } catch {
+    // Ignore storage failures.
+    // Tracking should never break UX.
+  }
+}
+
+/**
+ * Read first-touch attribution safely.
+ */
+function readFirstTouch(): FirstTouchAttribution | null {
+  try {
+    const value = localStorage.getItem(FIRST_TOUCH_KEY);
+
+    if (!value) {
+      return null;
+    }
+
+    return JSON.parse(value) as FirstTouchAttribution;
+  } catch {
+    localStorage.removeItem(FIRST_TOUCH_KEY);
+
+    return null;
+  }
+}
+
+/**
+ * Capture original acquisition source.
+ *
+ * Existing first-touch data
+ * is never overwritten.
+ */
+export function captureFirstTouchAttribution(attribution: Attribution) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const existing = readFirstTouch();
+
+  if (existing) {
+    return;
+  }
+
+  saveFirstTouch({
+    ...attribution,
+
+    capturedAt: Date.now(),
+  });
+}
+
+/**
+ * Get original acquisition source.
+ */
+export function getFirstTouchAttribution(): Attribution | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return readFirstTouch();
+}
+
+/**
+ * Remove first-touch attribution.
+ */
+export function clearFirstTouchAttribution() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  localStorage.removeItem(FIRST_TOUCH_KEY);
+}
+
+
+==================================================
+FILE: src\lib\hashing.ts
+==================================================
+
+/**
+ * Hash a string using SHA-256.
+ *
+ * Returns a hexadecimal SHA-256 hash.
+ *
+ * Example:
+ *
+ * input:
+ * john@example.com
+ *
+ * output:
+ * a94a8fe5ccb19ba...
+ */
+export async function hashSHA256(value?: string): Promise<string | undefined> {
+  if (!value) {
+    return undefined;
+  }
+
+  const encoder = new TextEncoder();
+
+  const data = encoder.encode(value);
+
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+
+  return hashArray.map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+
+==================================================
+FILE: src\lib\leadIdentity.ts
+==================================================
+
+import type { EnhancedConversionInput } from "@/types/enhancedConversion";
+
+const LEAD_IDENTITY_KEY = "lead_identity";
+
+/**
+ * Save lead identity temporarily.
+ *
+ * Used only during the conversion journey
+ * before building Enhanced Conversion data.
+ */
+export function saveLeadIdentity(identity: EnhancedConversionInput) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  sessionStorage.setItem(LEAD_IDENTITY_KEY, JSON.stringify(identity));
+}
+
+/**
+ * Read stored lead identity.
+ */
+export function getLeadIdentity(): EnhancedConversionInput | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const value = sessionStorage.getItem(LEAD_IDENTITY_KEY);
+
+  if (!value) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(value) as EnhancedConversionInput;
+  } catch {
+    sessionStorage.removeItem(LEAD_IDENTITY_KEY);
+
+    return null;
+  }
+}
+
+/**
+ * Remove stored identity.
+ *
+ * Cleanup after conversion tracking.
+ */
+export function clearLeadIdentity() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  sessionStorage.removeItem(LEAD_IDENTITY_KEY);
+}
+
+
+==================================================
+FILE: src\lib\normalization.ts
+==================================================
+
+/**
+ * Normalize an email address.
+ *
+ * Rules:
+ * - Trim whitespace
+ * - Convert to lowercase
+ * - Remove dots from Gmail local parts
+ */
+export function normalizeEmail(email?: string): string | undefined {
+  if (!email) {
+    return undefined;
+  }
+
+  const normalized = email.trim().toLowerCase();
+
+  if (!normalized) {
+    return undefined;
+  }
+
+  const [localPart, domain] = normalized.split("@");
+
+  if (!localPart || !domain) {
+    return normalized;
+  }
+
+  if (domain === "gmail.com" || domain === "googlemail.com") {
+    return `${localPart.replace(/\./g, "")}@${domain}`;
+  }
+
+  return normalized;
+}
+
+/**
+ * Normalize a phone number.
+ *
+ * Rules:
+ * - Trim whitespace
+ * - Remove formatting characters
+ * - Preserve leading "+"
+ */
+export function normalizePhone(phone?: string): string | undefined {
+  if (!phone) {
+    return undefined;
+  }
+
+  const trimmed = phone.trim();
+
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const hasPlus = trimmed.startsWith("+");
+
+  const digits = trimmed.replace(/\D/g, "");
+
+  if (!digits) {
+    return undefined;
+  }
+
+  return hasPlus ? `+${digits}` : digits;
+}
+
+/**
+ * Normalize a first or last name.
+ *
+ * Rules:
+ * - Trim whitespace
+ * - Collapse spaces
+ * - Lowercase
+ */
+export function normalizePersonName(name?: string): string | undefined {
+  if (!name) {
+    return undefined;
+  }
+
+  const normalized = name.trim().replace(/\s+/g, " ").toLowerCase();
+
+  return normalized || undefined;
+}
+
+/**
+ * Normalize an ISO 3166-1 alpha-2 country code.
+ *
+ * Rules:
+ * - Trim whitespace
+ * - Convert to uppercase
+ *
+ * Example:
+ * pk -> PK
+ */
+export function normalizeCountry(country?: string): string | undefined {
+  if (!country) {
+    return undefined;
+  }
+
+  const normalized = country.trim().toUpperCase();
+
+  return normalized || undefined;
+}
+
+/**
+ * Normalize a postal code.
+ *
+ * Rules:
+ * - Trim whitespace
+ * - Collapse multiple spaces
+ */
+export function normalizePostalCode(postalCode?: string): string | undefined {
+  if (!postalCode) {
+    return undefined;
+  }
+
+  const normalized = postalCode.trim().replace(/\s+/g, " ");
+
+  return normalized || undefined;
+}
+
+
+==================================================
+FILE: src\lib\session.ts
+==================================================
+
+import type { Attribution } from "@/types/attribution";
+import type { Conversion } from "@/types/session";
+import { getAttribution } from "@/lib/attribution";
+
+const CONVERSION_KEY = "conversion";
+
+const CONVERSION_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
+
+/**
+ * Save conversion journey.
+ */
+function saveConversion(conversion: Conversion) {
+  sessionStorage.setItem(CONVERSION_KEY, JSON.stringify(conversion));
+}
+
+/**
+ * Remove conversion journey.
+ */
+function clearConversion() {
+  sessionStorage.removeItem(CONVERSION_KEY);
+}
+
+/**
+ * Read conversion safely.
+ */
+function readConversion(): Conversion | null {
+  const value = sessionStorage.getItem(CONVERSION_KEY);
+
+  if (!value) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(value) as Conversion;
+  } catch {
+    clearConversion();
+    return null;
+  }
+}
+
+/**
+ * Check expiry.
+ */
+function isExpired(conversion: Conversion) {
+  return Date.now() - conversion.createdAt > CONVERSION_EXPIRY_MS;
+}
+
+/**
+ * Get current conversion.
+ */
+export function getConversion(): Conversion | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return readConversion();
+}
+
+/**
+ * Create a new conversion journey.
+ *
+ * Called when user clicks CTA.
+ */
+export function ensureConversion() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const existing = readConversion();
+
+  /**
+   * Keep active incomplete journeys.
+   */
+  if (
+    existing &&
+    !isExpired(existing) &&
+    existing.started &&
+    !existing.completed
+  ) {
+    return;
+  }
+
+  const attribution: Attribution = getAttribution() ?? {};
+
+  const conversion: Conversion = {
+    eventId: crypto.randomUUID(),
+
+    started: true,
+
+    completed: false,
+
+    fired: false,
+
+    createdAt: Date.now(),
+
+    attribution,
+  };
+
+  saveConversion(conversion);
+}
+
+/**
+ * Mark lead submission complete.
+ */
+export function completeConversion() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const conversion = readConversion();
+
+  if (!conversion) {
+    return;
+  }
+
+  conversion.completed = true;
+
+  saveConversion(conversion);
+}
+
+/**
+ * Check whether GA4 conversion
+ * can be sent.
+ */
+export function canConvert() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const conversion = readConversion();
+
+  if (!conversion) {
+    return false;
+  }
+
+  if (isExpired(conversion)) {
+    clearConversion();
+
+    return false;
+  }
+
+  return conversion.started && conversion.completed && !conversion.fired;
+}
+
+/**
+ * Mark GA4 conversion dispatched.
+ */
+export function consumeConversion() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const conversion = readConversion();
+
+  if (!conversion) {
+    return;
+  }
+
+  if (conversion.fired) {
+    return;
+  }
+
+  conversion.fired = true;
+
+  saveConversion(conversion);
+}
+
+
+==================================================
+FILE: src\lib\tracking.ts
+==================================================
+
+const HERO_CLICK_KEY = "hero_click_fired";
+
+/**
+ * Check whether hero CTA click
+ * has already been tracked
+ * in the current session.
+ */
+export function hasTrackedHeroClick() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return sessionStorage.getItem(HERO_CLICK_KEY) !== null;
+}
+
+/**
+ * Mark hero CTA click as tracked
+ * for this browser session.
+ */
+export function markHeroClickTracked() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  sessionStorage.setItem(HERO_CLICK_KEY, "1");
+}
+
+/**
+ * Remove hero click tracking state.
+ *
+ * Useful during testing/debugging.
+ */
+export function clearHeroClickTracking() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  sessionStorage.removeItem(HERO_CLICK_KEY);
+}
+
+
+==================================================
+FILE: src\scripts\listConversionActions.ts
+==================================================
+
+import "dotenv/config";
+import { GoogleAdsApi } from "google-ads-api";
+
+const client = new GoogleAdsApi({
+  client_id: process.env.TEST_OAUTH_CLIENT_ID!,
+  client_secret: process.env.TEST_OAUTH_CLIENT_SECRET!,
+  developer_token: process.env.GOOGLE_ADS_DEVELOPER_TOKEN!,
+});
+
+const customer = client.Customer({
+  customer_id: "2058461331",
+  login_customer_id: "4861157313",
+  refresh_token: process.env.TEST_GOOGLE_ADS_API_REFRESH_TOKEN!,
+});
+
+async function main() {
+  const result = await customer.query(`
+    SELECT
+      conversion_action.id,
+      conversion_action.name
+    FROM conversion_action
+  `);
+
+  console.dir(result, { depth: null });
+}
+
+main().catch(console.error);
+
+
+==================================================
+FILE: src\scripts\run-upload-job.ts
+==================================================
+
+import "dotenv/config";
+
+import { runOfflineConversionUploadJob } from "../services/offlineConversionUploadJob";
+
+async function main() {
+  try {
+    const result = await runOfflineConversionUploadJob();
+
+    console.log("Upload job completed.");
+    console.table(result);
+  } catch (error) {
+    console.error(error);
+
+    process.exit(1);
+  }
+}
+
+main();
+
+
+==================================================
+FILE: src\scripts\test-google-ads-auth.ts
+==================================================
+
+import "dotenv/config";
+import { GoogleAdsApi } from "google-ads-api";
+
+const googleAdsClient = new GoogleAdsApi({
+  client_id: process.env.TEST_OAUTH_CLIENT_ID!,
+  client_secret: process.env.TEST_OAUTH_CLIENT_SECRET!,
+  developer_token: process.env.GOOGLE_ADS_DEVELOPER_TOKEN!,
+});
+
+const customer = googleAdsClient.Customer({
+  customer_id: "2058461331",
+  login_customer_id: "4861157313",
+  refresh_token: process.env.TEST_GOOGLE_ADS_API_REFRESH_TOKEN!,
+});
+
+async function main() {
+  const result = await customer.query(`
+    SELECT
+      customer.id,
+      customer.descriptive_name
+    FROM customer
+    LIMIT 1
+  `);
+
+  console.log(result);
+}
+
+main().catch(console.error);
+
+
+==================================================
+FILE: src\services\adminConversions.ts
+==================================================
+
+import pool from "@/lib/db";
+
+export async function getAdminConversions() {
+  const result = await pool.query(
+    `
+    SELECT
+      ocu.id,
+      ocu.lead_id,
+      ocu.upload_status,
+
+      ocu.reconciliation_status,
+      ocu.reconciled_at,
+      ocu.reconciliation_notes,
+
+      ocu.google_job_id,
+      ocu.google_error_code,
+      ocu.google_error_message,
+
+      ocu.uploaded_at,
+      ocu.created_at,
+
+      l.first_name,
+      l.last_name,
+      l.email
+
+    FROM public.offline_conversion_uploads ocu
+
+    JOIN public.leads l
+      ON l.id = ocu.lead_id
+
+    ORDER BY ocu.created_at DESC;
+    `,
+  );
+
+  return result.rows;
+}
+
+
+==================================================
+FILE: src\services\adminLeads.ts
+==================================================
+
+import pool from "@/lib/db";
+
+export async function getAdminLeads() {
+  const result = await pool.query(
+    `
+    SELECT
+      id,
+      first_name,
+      last_name,
+      email,
+      phone,
+      status,
+      created_at,
+      updated_at
+    FROM public.leads
+    ORDER BY created_at DESC;
+    `,
+  );
+
+  return result.rows;
+}
+
+
+==================================================
+FILE: src\services\googleAdsOfflineConversion.ts
+==================================================
+
+import { GoogleAdsApi, services } from "google-ads-api";
+
+import pool from "@/lib/db";
+
+const isTest = process.env.GOOGLE_ADS_MODE === "test";
+
+const googleAdsClient = new GoogleAdsApi({
+  client_id: isTest
+    ? process.env.TEST_OAUTH_CLIENT_ID!
+    : process.env.OAUTH_CLIENT_ID!,
+
+  client_secret: isTest
+    ? process.env.TEST_OAUTH_CLIENT_SECRET!
+    : process.env.OAUTH_CLIENT_SECRET!,
+
+  developer_token: process.env.GOOGLE_ADS_DEVELOPER_TOKEN!,
+});
+
+function getCustomer() {
+  const isTest = process.env.GOOGLE_ADS_MODE === "test";
+
+  return googleAdsClient.Customer({
+    customer_id: isTest
+      ? process.env.TEST_GOOGLE_ADS_CUSTOMER_ID!
+      : process.env.GOOGLE_ADS_CUSTOMER_ID!,
+
+    refresh_token: isTest
+      ? process.env.TEST_GOOGLE_ADS_API_REFRESH_TOKEN!
+      : process.env.GOOGLE_ADS_API_REFRESH_TOKEN!,
+
+    login_customer_id: isTest
+      ? process.env.TEST_GOOGLE_ADS_LOGIN_CUSTOMER_ID
+      : process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID,
+  });
+}
+
+export async function uploadOfflineConversion(uploadId: number) {
+  const client = await pool.connect();
+
+  try {
+    const result = await client.query(
+      `
+      SELECT *
+      FROM public.offline_conversion_uploads
+      WHERE id = $1
+      AND upload_status != 'uploaded';
+      `,
+      [uploadId],
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error("Pending conversion upload not found.");
+    }
+
+    const upload = result.rows[0];
+
+    if (!upload.gclid) {
+      throw new Error("Missing GCLID.");
+    }
+
+    const customer = getCustomer();
+
+    const conversionCustomerId =
+      process.env.GOOGLE_ADS_MODE === "test"
+        ? process.env.TEST_GOOGLE_ADS_CUSTOMER_ID
+        : process.env.GOOGLE_ADS_CUSTOMER_ID;
+
+    const conversionActionId =
+      process.env.GOOGLE_ADS_MODE === "test"
+        ? process.env.TEST_GOOGLE_ADS_QUALIFIED_LEAD_CONVERSION_ACTION_ID
+        : process.env.GOOGLE_ADS_QUALIFIED_LEAD_CONVERSION_ACTION_ID;
+
+    const conversionRequest = new services.UploadClickConversionsRequest({
+      customer_id: conversionCustomerId!,
+
+      conversions: [
+        {
+          gclid: upload.gclid,
+
+          conversion_action: `customers/${conversionCustomerId}/conversionActions/${conversionActionId}`,
+
+          conversion_date_time: new Date(upload.conversion_time)
+            .toISOString()
+            .replace("T", " ")
+            .replace("Z", "+00:00"),
+
+          conversion_value: Number(upload.conversion_value),
+
+          currency_code: upload.currency_code,
+        },
+      ],
+
+      partial_failure: true,
+
+      validate_only: false,
+    });
+
+    const response =
+      await customer.conversionUploads.uploadClickConversions(
+        conversionRequest,
+      );
+
+    const googleErrorMessage = response.partial_failure_error?.message ?? null;
+
+    const uploadStatus = googleErrorMessage ? "failed" : "uploaded";
+
+    const googleDiagnostics = {
+      job_id: response.job_id?.toString() ?? null,
+
+      uploaded_results:
+        response.results?.map((item) => ({
+          gclid: item.gclid ?? null,
+          conversion_action: item.conversion_action ?? null,
+          conversion_date_time: item.conversion_date_time ?? null,
+        })) ?? [],
+
+      partial_failure_error: response.partial_failure_error
+        ? {
+            message: response.partial_failure_error.message ?? null,
+
+            details: response.partial_failure_error.details ?? [],
+          }
+        : null,
+
+      uploaded_at: new Date().toISOString(),
+    };
+
+    await client.query(
+      `
+      UPDATE public.offline_conversion_uploads
+
+      SET
+        upload_status = $1,
+        google_job_id = $2,
+        google_error_message = $3,
+        google_response = $4,
+        uploaded_at = NOW()
+
+      WHERE id = $5;
+      `,
+      [
+        uploadStatus,
+        response.job_id?.toString() ?? null,
+        googleErrorMessage,
+        JSON.stringify(googleDiagnostics),
+        uploadId,
+      ],
+    );
+
+    return googleDiagnostics;
+  } catch (error: unknown) {
+    const googleErrorObject = error as {
+      message?: string;
+      request_id?: string;
+      errors?: Array<{
+        message?: string;
+        error_code?: unknown;
+      }>;
+    };
+
+    const googleError = {
+      message:
+        googleErrorObject.message ??
+        googleErrorObject.errors?.[0]?.message ??
+        JSON.stringify(error),
+
+      request_id: googleErrorObject.request_id ?? null,
+
+      errors:
+        googleErrorObject.errors?.map((item) => ({
+          message: item.message ?? null,
+          error_code: item.error_code ?? null,
+        })) ?? null,
+
+      timestamp: new Date().toISOString(),
+    };
+
+    await client.query(
+      `
+      UPDATE public.offline_conversion_uploads
+
+      SET
+        upload_status = 'failed',
+        upload_attempts = upload_attempts + 1,
+        last_attempt_at = NOW(),
+
+        next_retry_at =
+          CASE
+            WHEN upload_attempts + 1 < 5
+            THEN NOW() + INTERVAL '15 minutes'
+            ELSE NULL
+          END,
+
+        google_error_message = $1,
+        google_response = $2
+
+      WHERE id = $3;
+      `,
+      [googleError.message, JSON.stringify(googleError), uploadId],
+    );
+
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+
+==================================================
+FILE: src\services\leadLifecycle.ts
+==================================================
+
+import pool from "@/lib/db";
+
+export interface ChangeLeadStatusInput {
+  leadId: number;
+
+  newStatus: string;
+
+  changedBy?: string;
+
+  reason?: string;
+
+  metadata?: Record<string, unknown>;
+}
+
+export async function changeLeadStatus(input: ChangeLeadStatusInput) {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    /**
+     * Lock lead row.
+     */
+    const leadResult = await client.query(
+      `
+      SELECT *
+      FROM public.leads
+      WHERE id = $1
+      FOR UPDATE;
+      `,
+      [input.leadId],
+    );
+
+    if (leadResult.rows.length === 0) {
+      throw new Error("Lead not found.");
+    }
+
+    const lead = leadResult.rows[0];
+
+    /**
+     * Prevent duplicate status changes.
+     */
+    if (lead.status === input.newStatus) {
+      await client.query("COMMIT");
+
+      return lead;
+    }
+
+    /**
+     * Update lead status.
+     */
+    const updatedLeadResult = await client.query(
+      `
+      UPDATE public.leads
+      SET
+        status = $1,
+        updated_at = NOW()
+
+      WHERE id = $2
+
+      RETURNING *;
+      `,
+      [input.newStatus, input.leadId],
+    );
+
+    const updatedLead = updatedLeadResult.rows[0];
+
+    /**
+     * Create immutable status history.
+     */
+    await client.query(
+      `
+      INSERT INTO public.lead_status_history
+      (
+        lead_id,
+        previous_status,
+        new_status,
+        changed_by
+      )
+
+      VALUES
+      (
+        $1,
+        $2,
+        $3,
+        $4
+      );
+      `,
+      [input.leadId, lead.status, input.newStatus, input.changedBy ?? null],
+    );
+
+    /**
+     * Create CRM lifecycle event.
+     */
+    await client.query(
+      `
+      INSERT INTO public.lifecycle_events
+      (
+        event_id,
+        lead_id,
+        event_name,
+        metadata
+      )
+
+      VALUES
+      (
+        gen_random_uuid(),
+        $1,
+        $2,
+        $3
+      );
+      `,
+      [
+        input.leadId,
+
+        "lead_status_changed",
+
+        {
+          previous_status: lead.status,
+
+          new_status: input.newStatus,
+
+          changed_by: input.changedBy ?? null,
+
+          reason: input.reason ?? null,
+
+          ...(input.metadata ?? {}),
+        },
+      ],
+    );
+
+    /**
+     * Create Google Ads offline conversion upload job
+     * only when lead first becomes qualified.
+     */
+    if (input.newStatus === "qualified" && lead.status !== "qualified") {
+      if (!lead.gclid) {
+        console.warn(
+          `Lead ${lead.id} qualified but has no GCLID. Offline upload skipped.`,
+        );
+      } else {
+        await client.query(
+          `
+      INSERT INTO public.offline_conversion_uploads
+      (
+        lead_id,
+        conversion_name,
+        gclid,
+        conversion_time,
+        conversion_value,
+        currency_code
+      )
+
+      VALUES
+      (
+        $1,
+        'Lead Qualified - Offline',
+        $2,
+        NOW(),
+        1,
+        'PKR'
+      )
+
+      ON CONFLICT
+      (
+        lead_id,
+        conversion_name
+      )
+
+      DO NOTHING;
+      `,
+          [lead.id, lead.gclid],
+        );
+      }
+    }
+
+    await client.query("COMMIT");
+
+    return updatedLead;
+  } catch (error) {
+    await client.query("ROLLBACK");
+
+    console.error("Failed to change lead status:", error);
+
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+
+==================================================
+FILE: src\services\leads.ts
+==================================================
+
+import pool from "@/lib/db";
+
+import type { CreateLeadInput } from "@/types/lead";
+
+export async function createLead(data: CreateLeadInput) {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const leadResult = await client.query(
+      `
+      INSERT INTO public.leads (
+        first_name,
+        last_name,
+        email,
+        phone,
+
+        country,
+        postal_code,
+
+        landing_page,
+        referrer,
+
+        gclid,
+
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        utm_term,
+        utm_content,
+
+        device,
+        event_id,
+
+        debug_source,
+        debug_campaign,
+        debug_click_id
+      )
+
+      VALUES (
+        $1,$2,$3,$4,
+        $5,$6,
+        $7,$8,
+        $9,
+        $10,$11,$12,$13,$14,
+        $15,$16,
+        $17,$18,$19
+      )
+
+      RETURNING *;
+      `,
+      [
+        data.firstName,
+
+        data.lastName,
+
+        data.email,
+
+        data.phone ?? null,
+
+        data.country ?? null,
+
+        data.postalCode ?? null,
+
+        data.landingPage ?? null,
+
+        data.referrer ?? null,
+
+        data.gclid ?? null,
+
+        data.utmSource ?? null,
+
+        data.utmMedium ?? null,
+
+        data.utmCampaign ?? null,
+
+        data.utmTerm ?? null,
+
+        data.utmContent ?? null,
+
+        data.device ?? null,
+
+        data.conversionEventId ?? null,
+
+        data.debugSource ?? null,
+
+        data.debugCampaign ?? null,
+
+        data.debugClickId ?? null,
+      ],
+    );
+
+    const lead = leadResult.rows[0];
+
+    await client.query(
+      `
+      INSERT INTO public.lifecycle_events
+      (
+        event_id,
+        lead_id,
+        event_name,
+        metadata
+      )
+
+      VALUES
+      (
+        $1,
+        $2,
+        $3,
+        $4
+      );
+      `,
+      [
+        data.conversionEventId,
+
+        lead.id,
+
+        "lead_created",
+
+        {
+          source: "website",
+        },
+      ],
+    );
+
+    await client.query("COMMIT");
+
+    return lead;
+  } catch (error) {
+    await client.query("ROLLBACK");
+
+    console.error("Failed to create lead transaction:", error);
+
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+
+==================================================
+FILE: src\services\offlineConversionReconciliation.ts
+==================================================
+
+import pool from "@/lib/db";
+
+export async function reconcileOfflineConversion(uploadId: number) {
+  const result = await pool.query(
+    `
+    SELECT *
+    FROM public.offline_conversion_uploads
+    WHERE id = $1;
+    `,
+    [uploadId],
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error("Offline conversion upload not found.");
+  }
+
+  const upload = result.rows[0];
+
+  if (upload.upload_status !== "uploaded") {
+    throw new Error("Conversion is not uploaded yet.");
+  }
+
+  await pool.query(
+    `
+    UPDATE public.offline_conversion_uploads
+
+    SET
+      reconciliation_status = 'reconciled',
+
+      reconciled_at = NOW(),
+
+      reconciliation_notes =
+      $1
+
+    WHERE id = $2;
+    `,
+    ["Google Ads upload confirmed by reconciliation process.", uploadId],
+  );
+
+  return {
+    success: true,
+    uploadId,
+  };
+}
+
+
+==================================================
+FILE: src\services\offlineConversionUploadJob.ts
+==================================================
+
+import pool from "@/lib/db";
+import { uploadOfflineConversion } from "./googleAdsOfflineConversion";
+
+export interface UploadJobResult {
+  processed: number;
+  uploaded: number;
+  failed: number;
+}
+
+export async function runOfflineConversionUploadJob(): Promise<UploadJobResult> {
+  const result = await pool.query(
+    `
+    SELECT id
+    FROM public.offline_conversion_uploads
+    WHERE
+(
+    upload_status = 'pending'
+)
+OR
+(
+    upload_status = 'failed'
+    AND upload_attempts < 5
+    AND (
+        next_retry_at IS NULL
+        OR next_retry_at <= NOW()
+    )
+)
+
+ORDER BY created_at ASC;
+    `,
+  );
+
+  let uploaded = 0;
+  let failed = 0;
+
+  for (const row of result.rows) {
+    try {
+      await uploadOfflineConversion(row.id);
+
+      uploaded++;
+    } catch (error) {
+      console.error(`Offline conversion upload ${row.id} failed:`, error);
+
+      failed++;
+    }
+  }
+
+  return {
+    processed: result.rows.length,
+    uploaded,
+    failed,
+  };
+}
+
+
+==================================================
+FILE: src\types\analytics.ts
+==================================================
+
+import type { EnhancedConversionPayload } from "./enhancedConversion";
+
+export interface GenerateLeadParams {
+  /**
+   * Source of the conversion event.
+   *
+   * Example:
+   * landing_page
+   */
+  lead_source: string;
+
+  /**
+   * Stable conversion identifier.
+   *
+   * Used to connect:
+   *
+   * CTA click
+   * ↓
+   * Lead submission
+   * ↓
+   * generate_lead event
+   */
+  event_id: string;
+
+  /**
+   * Enhanced Conversion user data.
+   *
+   * Contains SHA-256 hashed
+   * first-party customer information.
+   *
+   * Passed through GTM for
+   * Google Ads enhanced conversions.
+   */
+  user_data?: EnhancedConversionPayload;
+
+  /**
+   * Optional conversion value.
+   */
+  value?: number;
+
+  /**
+   * Optional currency code.
+   *
+   * Example:
+   * USD
+   */
+  currency?: string;
+}
+
+export interface HeroCTAParams {
+  /**
+   * CTA label.
+   *
+   * Example:
+   * Get Started
+   */
+  button_name: string;
+}
+
+
+==================================================
+FILE: src\types\attribution.ts
+==================================================
+
+export interface Attribution {
+  /**
+   * Google Ads click identifier.
+   *
+   * Example:
+   * gclid=xxxxx
+   */
+  gclid?: string;
+
+  /**
+   * Campaign attribution parameters.
+   */
+  utmSource?: string;
+
+  utmMedium?: string;
+
+  utmCampaign?: string;
+
+  utmTerm?: string;
+
+  utmContent?: string;
+
+  /**
+   * Previous page source.
+   */
+  referrer?: string;
+
+  /**
+   * First page where user landed.
+   */
+  landingPage?: string;
+
+  /**
+   * Browser/device information.
+   */
+  device?: string;
+}
+
+/**
+ * First-touch attribution record.
+ *
+ * Stored permanently until cleared.
+ *
+ * Used to understand original acquisition source.
+ */
+export interface FirstTouchAttribution extends Attribution {
+  /**
+   * Timestamp when first attribution
+   * was captured.
+   */
+  capturedAt: number;
+}
+
+
+==================================================
+FILE: src\types\customer.ts
+==================================================
+
+export interface CustomerIdentity {
+  firstName?: string;
+  lastName?: string;
+
+  email?: string;
+  phone?: string;
+
+  country?: string;
+  postalCode?: string;
+}
+
+
+==================================================
+FILE: src\types\dataLayer.ts
+==================================================
+
+import type { EnhancedConversionPayload } from "./enhancedConversion";
+
+/**
+ * Generic GTM dataLayer event.
+ *
+ * Application pushes business events here.
+ *
+ * GTM decides how these events are
+ * processed into GA4 / Google Ads tags.
+ */
+export interface DataLayerEvent {
+  /**
+   * GTM event name.
+   */
+  event: string;
+
+  /**
+   * Enhanced Conversion user data.
+   *
+   * Contains normalized and SHA-256
+   * hashed customer identifiers.
+   *
+   * Consumed by GTM User-Provided Data
+   * configuration.
+   */
+  user_data?: EnhancedConversionPayload;
+
+  /**
+   * Additional event payload.
+   *
+   * Examples:
+   *
+   * - event_id
+   * - lead_source
+   * - value
+   * - currency
+   */
+  [key: string]: unknown;
+}
+
+
+==================================================
+FILE: src\types\enhancedConversion.ts
+==================================================
+
+/**
+ * A customer's hashed identity.
+ *
+ * Values are normalized first,
+ * then SHA-256 hashed.
+ */
+export interface HashedIdentity {
+  /**
+   * SHA-256 hashed email.
+   */
+  sha256_email_address?: string;
+
+  /**
+   * SHA-256 hashed phone number.
+   */
+  sha256_phone_number?: string;
+
+  /**
+   * Hashed address identity fields.
+   */
+  address?: {
+    /**
+     * SHA-256 hashed first name.
+     */
+    sha256_first_name?: string;
+
+    /**
+     * SHA-256 hashed last name.
+     */
+    sha256_last_name?: string;
+
+    /**
+     * ISO 3166-1 alpha-2 country code.
+     *
+     * Example:
+     * PK
+     */
+    country?: string;
+
+    /**
+     * Postal code.
+     */
+    postal_code?: string;
+  };
+}
+
+/**
+ * Raw customer data collected
+ * from the lead form.
+ */
+export interface EnhancedConversionInput {
+  firstName?: string;
+
+  lastName?: string;
+
+  email?: string;
+
+  phone?: string;
+
+  country?: string;
+
+  postalCode?: string;
+}
+
+/**
+ * Final payload sent through GTM.
+ */
+export type EnhancedConversionPayload = HashedIdentity;
+
+
+==================================================
+FILE: src\types\lead.ts
+==================================================
+
+export interface CreateLeadInput {
+  /**
+   * Customer identity.
+   */
+  firstName: string;
+
+  lastName: string;
+
+  email: string;
+
+  phone?: string;
+
+  country?: string;
+
+  postalCode?: string;
+
+  /**
+   * Landing context.
+   */
+  landingPage?: string;
+
+  referrer?: string;
+
+  /**
+   * Google attribution.
+   */
+  gclid?: string;
+
+  utmSource?: string;
+
+  utmMedium?: string;
+
+  utmCampaign?: string;
+
+  utmTerm?: string;
+
+  utmContent?: string;
+
+  /**
+   * Device information.
+   */
+  device?: string;
+
+  /**
+   * Conversion identity.
+   */
+  conversionEventId?: string;
+
+  /**
+   * Development/testing fields.
+   */
+  debugSource?: string;
+
+  debugCampaign?: string;
+
+  debugClickId?: string;
+}
+
+export interface Lead extends CreateLeadInput {
+  id: number;
+
+  status: string;
+
+  createdAt: Date;
+
+  updatedAt: Date;
+}
+
+
+==================================================
+FILE: src\types\session.ts
+==================================================
+
+import type { Attribution } from "./attribution";
+import type { EnhancedConversionPayload } from "./enhancedConversion";
+
+/**
+ * Conversion journey stored in sessionStorage.
+ *
+ * Represents the user's progress from
+ * CTA interaction → lead submission → analytics event.
+ */
+export interface Conversion {
+  /**
+   * Unique identifier for this conversion journey.
+   *
+   * Used in:
+   * - dataLayer events
+   * - GA4 debugging
+   * - future offline conversion matching
+   */
+  eventId: string;
+
+  /**
+   * User started the conversion journey.
+   *
+   * Set when CTA is clicked.
+   */
+  started: boolean;
+
+  /**
+   * Lead form was successfully submitted.
+   *
+   * Set after backend confirms lead creation.
+   */
+  completed: boolean;
+
+  /**
+   * Analytics event was dispatched.
+   *
+   * Prevents duplicate generate_lead events.
+   */
+  fired: boolean;
+
+  /**
+   * Creation timestamp.
+   *
+   * Used for conversion expiration.
+   */
+  createdAt: number;
+
+  /**
+   * Marketing attribution captured
+   * when conversion started.
+   */
+  attribution: Attribution;
+
+  /**
+   * Privacy-safe customer identity payload.
+   *
+   * Created after lead submission.
+   *
+   * Contains hashed identifiers that can
+   * later be consumed by GTM/Google Ads.
+   */
+  enhancedConversion?: EnhancedConversionPayload;
+}
+

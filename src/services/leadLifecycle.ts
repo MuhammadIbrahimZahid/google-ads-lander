@@ -129,6 +129,51 @@ export async function changeLeadStatus(input: ChangeLeadStatusInput) {
       ],
     );
 
+    /**
+     * Create Google Ads offline conversion upload job
+     * only when lead first becomes qualified.
+     */
+    if (input.newStatus === "qualified" && lead.status !== "qualified") {
+      if (!lead.gclid) {
+        console.warn(
+          `Lead ${lead.id} qualified but has no GCLID. Offline upload skipped.`,
+        );
+      } else {
+        await client.query(
+          `
+      INSERT INTO public.offline_conversion_uploads
+      (
+        lead_id,
+        conversion_name,
+        gclid,
+        conversion_time,
+        conversion_value,
+        currency_code
+      )
+
+      VALUES
+      (
+        $1,
+        'Lead Qualified - Offline',
+        $2,
+        NOW(),
+        1,
+        'PKR'
+      )
+
+      ON CONFLICT
+      (
+        lead_id,
+        conversion_name
+      )
+
+      DO NOTHING;
+      `,
+          [lead.id, lead.gclid],
+        );
+      }
+    }
+
     await client.query("COMMIT");
 
     return updatedLead;
