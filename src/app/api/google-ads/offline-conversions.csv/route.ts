@@ -23,14 +23,6 @@ function escapeCSV(value: unknown) {
 function checkAuth(request: Request) {
   const authHeader = request.headers.get("authorization");
 
-  console.log("Auth header:", authHeader);
-
-  console.log("ENV USER EXISTS:", !!process.env.GOOGLE_DATA_MANAGER_USER);
-  console.log(
-    "ENV PASSWORD EXISTS:",
-    !!process.env.GOOGLE_DATA_MANAGER_PASSWORD,
-  );
-
   if (!authHeader?.startsWith("Basic ")) {
     return false;
   }
@@ -39,16 +31,7 @@ function checkAuth(request: Request) {
 
   const decoded = Buffer.from(base64Credentials, "base64").toString("utf-8");
 
-  console.log("Decoded username:", decoded.split(":")[0]);
-
   const [username, password] = decoded.split(":");
-
-  console.log("Password length received:", password?.length);
-
-  console.log(
-    "Expected password length:",
-    process.env.GOOGLE_DATA_MANAGER_PASSWORD?.length,
-  );
 
   return (
     username === process.env.GOOGLE_DATA_MANAGER_USER &&

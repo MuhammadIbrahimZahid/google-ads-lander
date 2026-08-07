@@ -8,8 +8,6 @@ export async function getAdminLeads() {
     FROM public.leads;
   `);
 
-  console.log("DB INFO:", result.rows[0]);
-
   const leads = await pool.query(`
     SELECT
       id,
@@ -23,8 +21,6 @@ export async function getAdminLeads() {
     FROM public.leads
     ORDER BY created_at DESC;
   `);
-
-  console.log("TOP LEAD:", leads.rows[0]);
 
   return leads.rows;
 }

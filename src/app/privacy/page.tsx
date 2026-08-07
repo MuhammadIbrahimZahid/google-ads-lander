@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 export default function PrivacyPolicyPage() {
   return (
     <main className="min-h-screen bg-white px-6 py-12 text-gray-900">
@@ -97,7 +95,7 @@ export default function PrivacyPolicyPage() {
             handled, please contact us at:
           </p>
 
-          <p>your-email@example.com</p>
+          <p>dummy101@example.com</p>
         </section>
       </div>
     </main>

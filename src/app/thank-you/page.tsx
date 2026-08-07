@@ -73,8 +73,6 @@ export default function ThankYouPage() {
         user_data: enhancedConversionData,
       });
 
-      console.log("generate_lead sent", conversion.eventId);
-
       clearLeadIdentity();
 
       setTimeout(() => {
