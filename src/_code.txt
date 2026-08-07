@@ -254,6 +254,9 @@ export default async function AdminConversionsPage() {
 FILE: src\app\admin\leads\page.tsx
 ==================================================
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import { getAdminLeads } from "@/services/adminLeads";
 import StatusButtons from "./StatusButtons";
 
@@ -409,6 +412,339 @@ export default function StatusButtons({
       ))}
     </div>
   );
+}
+
+
+==================================================
+FILE: src\app\admin\offline-upload-dm\page.tsx
+==================================================
+
+"use client";
+
+import { useState } from "react";
+
+interface UploadResult {
+  success?: boolean;
+  processed?: number;
+  uploaded?: number;
+  failed?: number;
+  requestId?: string;
+  message?: string;
+}
+
+export default function OfflineUploadDMPage() {
+  const [result, setResult] = useState<UploadResult | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function upload() {
+    setLoading(true);
+    setResult(null);
+
+    try {
+      const response = await fetch("/api/admin/offline-upload-dm", {
+        method: "POST",
+      });
+
+      const data = await response.json();
+
+      setResult(data);
+    } catch {
+      setResult({
+        success: false,
+        message: "Upload request failed.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <main className="min-h-screen bg-gray-100 p-10">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-2xl shadow p-8">
+          <h1 className="text-3xl font-bold">Google Ads Data Manager</h1>
+
+          <p className="mt-2 text-gray-600">
+            Upload qualified CRM leads as offline conversions to Google Ads.
+          </p>
+        </div>
+
+        {/* Action Card */}
+        <div className="mt-8 bg-white rounded-2xl shadow p-8">
+          <h2 className="text-xl font-semibold">Offline Conversion Upload</h2>
+
+          <p className="mt-2 text-gray-600">
+            This will find all pending qualified leads and send them to Google
+            Data Manager.
+          </p>
+
+          <button
+            onClick={upload}
+            disabled={loading}
+            className="
+              mt-6
+              px-8
+              py-3
+              rounded-xl
+              bg-blue-600
+              text-white
+              font-semibold
+              hover:bg-blue-700
+              disabled:bg-gray-400
+            "
+          >
+            {loading
+              ? "Uploading conversions..."
+              : "Upload Pending Conversions"}
+          </button>
+        </div>
+
+        {/* Result */}
+        {result && (
+          <div className="mt-8 bg-white rounded-2xl shadow p-8">
+            <h2 className="text-xl font-semibold">Upload Result</h2>
+
+            {result.success ? (
+              <div className="mt-4 space-y-3">
+                <div className="flex justify-between">
+                  <span>Processed</span>
+
+                  <strong>{result.processed}</strong>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>Uploaded</span>
+
+                  <strong className="text-green-600">{result.uploaded}</strong>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>Failed</span>
+
+                  <strong className="text-red-600">{result.failed}</strong>
+                </div>
+
+                {result.requestId && (
+                  <div className="mt-4 bg-gray-100 p-4 rounded-lg">
+                    <p className="text-sm text-gray-500">Google Request ID</p>
+
+                    <code>{result.requestId}</code>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="mt-4 text-red-600">{result.message}</p>
+            )}
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
+
+
+==================================================
+FILE: src\app\api\admin\offline-upload-dm\route.ts
+==================================================
+
+import { NextResponse } from "next/server";
+
+import { runOfflineConversionUploadJobDM } from "@/services/offlineConversionUploadJobDM";
+
+export async function POST() {
+  try {
+    const result = await runOfflineConversionUploadJobDM();
+
+    return NextResponse.json({
+      success: true,
+
+      ...result,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        success: false,
+
+        message: error instanceof Error ? error.message : "DM upload failed",
+      },
+
+      {
+        status: 500,
+      },
+    );
+  }
+}
+
+
+==================================================
+FILE: src\app\api\google-ads\offline-conversions.csv\route.ts
+==================================================
+
+import { NextResponse } from "next/server";
+
+import pool from "@/lib/db";
+
+function escapeCSV(value: unknown) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  const stringValue = String(value);
+
+  if (
+    stringValue.includes(",") ||
+    stringValue.includes('"') ||
+    stringValue.includes("\n")
+  ) {
+    return `"${stringValue.replace(/"/g, '""')}"`;
+  }
+
+  return stringValue;
+}
+
+function checkAuth(request: Request) {
+  const authHeader = request.headers.get("authorization");
+
+  console.log("Auth header:", authHeader);
+
+  console.log("ENV USER EXISTS:", !!process.env.GOOGLE_DATA_MANAGER_USER);
+  console.log(
+    "ENV PASSWORD EXISTS:",
+    !!process.env.GOOGLE_DATA_MANAGER_PASSWORD,
+  );
+
+  if (!authHeader?.startsWith("Basic ")) {
+    return false;
+  }
+
+  const base64Credentials = authHeader.replace("Basic ", "");
+
+  const decoded = Buffer.from(base64Credentials, "base64").toString("utf-8");
+
+  console.log("Decoded username:", decoded.split(":")[0]);
+
+  const [username, password] = decoded.split(":");
+
+  console.log("Password length received:", password?.length);
+
+  console.log(
+    "Expected password length:",
+    process.env.GOOGLE_DATA_MANAGER_PASSWORD?.length,
+  );
+
+  return (
+    username === process.env.GOOGLE_DATA_MANAGER_USER &&
+    password === process.env.GOOGLE_DATA_MANAGER_PASSWORD
+  );
+}
+
+export async function GET(request: Request) {
+  try {
+    // Google Data Manager authentication
+    if (!checkAuth(request)) {
+      return new NextResponse("Unauthorized", {
+        status: 401,
+        headers: {
+          "WWW-Authenticate": "Basic",
+        },
+      });
+    }
+
+    const result = await pool.query(`
+      SELECT
+        ocu.gclid,
+        ocu.conversion_name,
+        ocu.conversion_time,
+        ocu.conversion_value,
+        ocu.currency_code,
+
+        l.email,
+        l.phone,
+        l.first_name,
+        l.last_name,
+        l.country,
+        l.postal_code
+
+      FROM public.offline_conversion_uploads ocu
+
+      JOIN public.leads l
+        ON l.id = ocu.lead_id
+
+      WHERE ocu.upload_status = 'pending'
+
+      ORDER BY ocu.created_at ASC;
+    `);
+
+    const headers = [
+      "gclid",
+      "conversion_name",
+      "conversion_time",
+      "conversion_value",
+      "currency_code",
+      "email",
+      "phone",
+      "first_name",
+      "last_name",
+      "country",
+      "postal_code",
+    ];
+
+    const rows = result.rows.map((row) =>
+      [
+        row.gclid,
+
+        row.conversion_name,
+
+        new Date(row.conversion_time)
+          .toISOString()
+          .replace("T", " ")
+          .replace("Z", "+00:00"),
+
+        row.conversion_value,
+
+        row.currency_code,
+
+        row.email,
+
+        row.phone,
+
+        row.first_name,
+
+        row.last_name,
+
+        row.country,
+
+        row.postal_code,
+      ]
+        .map(escapeCSV)
+        .join(","),
+    );
+
+    const csv = [headers.join(","), ...rows].join("\n");
+
+    return new NextResponse(csv, {
+      status: 200,
+
+      headers: {
+        "Content-Type": "text/csv",
+
+        "Content-Disposition": 'attachment; filename="offline-conversions.csv"',
+      },
+    });
+  } catch (error) {
+    console.error("Offline conversion CSV export failed:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Failed to generate CSV.",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
 }
 
 
@@ -2174,6 +2510,33 @@ main().catch(console.error);
 
 
 ==================================================
+FILE: src\scripts\testOfflineConversionDM.ts
+==================================================
+
+import "dotenv/config";
+
+import { uploadOfflineConversionDM } from "../services/googleAdsOfflineConversionDM";
+
+async function main() {
+  try {
+    const result = await uploadOfflineConversionDM(6);
+
+    console.log("DM upload successful");
+
+    console.dir(result, {
+      depth: null,
+    });
+  } catch (error) {
+    console.error("DM upload failed", error);
+
+    process.exit(1);
+  }
+}
+
+main();
+
+
+==================================================
 FILE: src\services\adminConversions.ts
 ==================================================
 
@@ -2222,8 +2585,16 @@ FILE: src\services\adminLeads.ts
 import pool from "@/lib/db";
 
 export async function getAdminLeads() {
-  const result = await pool.query(
-    `
+  const result = await pool.query(`
+    SELECT
+      MAX(id) AS latest_id,
+      COUNT(*) AS total
+    FROM public.leads;
+  `);
+
+  console.log("DB INFO:", result.rows[0]);
+
+  const leads = await pool.query(`
     SELECT
       id,
       first_name,
@@ -2235,11 +2606,18 @@ export async function getAdminLeads() {
       updated_at
     FROM public.leads
     ORDER BY created_at DESC;
-    `,
-  );
+  `);
 
-  return result.rows;
+  console.log("TOP LEAD:", leads.rows[0]);
+
+  return leads.rows;
 }
+
+
+==================================================
+FILE: src\services\googleAdsDataManager.ts
+==================================================
+
 
 
 ==================================================
@@ -2445,6 +2823,201 @@ export async function uploadOfflineConversion(uploadId: number) {
       WHERE id = $3;
       `,
       [googleError.message, JSON.stringify(googleError), uploadId],
+    );
+
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+
+==================================================
+FILE: src\services\googleAdsOfflineConversionDM.ts
+==================================================
+
+import pool from "@/lib/db";
+
+interface DataManagerResponse {
+  requestId?: string;
+  [key: string]: unknown;
+}
+
+async function getAccessToken(): Promise<string> {
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+
+    body: new URLSearchParams({
+      client_id: process.env.WEB_TEST_OAUTH_CLIENT_ID!,
+      client_secret: process.env.WEB_TEST_OAUTH_CLIENT_SECRET!,
+      refresh_token: process.env.WEB_TEST_OAUTH_REFRESH_TOKEN!,
+      grant_type: "refresh_token",
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`OAuth token failed: ${await response.text()}`);
+  }
+
+  const data = await response.json();
+
+  return data.access_token;
+}
+
+export async function uploadOfflineConversionDM(uploadId: number) {
+  const client = await pool.connect();
+
+  try {
+    const result = await client.query(
+      `
+      SELECT *
+      FROM public.offline_conversion_uploads
+      WHERE id = $1
+      AND upload_status != 'uploaded';
+      `,
+      [uploadId],
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error("Offline conversion upload not found.");
+    }
+
+    const upload = result.rows[0];
+
+    if (!upload.gclid) {
+      throw new Error("Missing GCLID.");
+    }
+
+    const accessToken = await getAccessToken();
+
+    const eventPayload = {
+      destinations: [
+        {
+          reference: process.env.GOOGLE_DATA_MANAGER_DESTINATION_REFERENCE,
+
+          operatingAccount: {
+            accountId: process.env.TEST_GOOGLE_ADS_CUSTOMER_ID,
+
+            accountType: "GOOGLE_ADS",
+          },
+
+          loginAccount: {
+            accountId: process.env.TEST_GOOGLE_ADS_LOGIN_CUSTOMER_ID,
+
+            accountType: "GOOGLE_ADS",
+          },
+
+          productDestinationId:
+            process.env.TEST_GOOGLE_ADS_QUALIFIED_LEAD_CONVERSION_ACTION_ID,
+        },
+      ],
+
+      events: [
+        {
+          eventName: upload.conversion_name,
+
+          eventTimestamp: new Date(upload.conversion_time).toISOString(),
+
+          transactionId: `offline_${upload.id}`,
+
+          conversionValue: Number(upload.conversion_value),
+
+          currency: upload.currency_code,
+
+          eventSource: "WEB",
+
+          adIdentifiers: {
+            gclid: upload.gclid,
+          },
+
+          destinationReferences: [
+            process.env.GOOGLE_DATA_MANAGER_DESTINATION_REFERENCE,
+          ],
+        },
+      ],
+    };
+
+    const response = await fetch(
+      "https://datamanager.googleapis.com/v1/events:ingest",
+      {
+        method: "POST",
+
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify(eventPayload),
+      },
+    );
+
+    const responseBody = (await response.json()) as DataManagerResponse;
+
+    const uploadStatus = response.ok ? "uploaded" : "failed";
+
+    await client.query(
+      `
+      UPDATE public.offline_conversion_uploads
+
+      SET
+        upload_status = $1,
+        google_job_id = $2,
+        google_response = $3,
+        google_error_message = $4,
+        uploaded_at = NOW()
+
+      WHERE id = $5;
+      `,
+      [
+        uploadStatus,
+
+        responseBody.requestId ?? null,
+
+        JSON.stringify(responseBody),
+
+        response.ok ? null : JSON.stringify(responseBody),
+
+        uploadId,
+      ],
+    );
+
+    if (!response.ok) {
+      throw new Error(JSON.stringify(responseBody));
+    }
+
+    return responseBody;
+  } catch (error) {
+    await client.query(
+      `
+      UPDATE public.offline_conversion_uploads
+
+      SET
+        upload_status = 'failed',
+
+        upload_attempts =
+          upload_attempts + 1,
+
+        last_attempt_at =
+          NOW(),
+
+        next_retry_at =
+          CASE
+            WHEN upload_attempts + 1 < 5
+            THEN NOW() + INTERVAL '15 minutes'
+            ELSE NULL
+          END,
+
+        google_error_message =
+          $1
+
+      WHERE id = $2;
+      `,
+      [error instanceof Error ? error.message : String(error), uploadId],
     );
 
     throw error;
@@ -2898,6 +3471,80 @@ ORDER BY created_at ASC;
   return {
     processed: result.rows.length,
     uploaded,
+    failed,
+  };
+}
+
+
+==================================================
+FILE: src\services\offlineConversionUploadJobDM.ts
+==================================================
+
+import pool from "@/lib/db";
+
+import { uploadOfflineConversionDM } from "./googleAdsOfflineConversionDM";
+
+export interface UploadJobDMResult {
+  processed: number;
+
+  uploaded: number;
+
+  failed: number;
+}
+
+export async function runOfflineConversionUploadJobDM(): Promise<UploadJobDMResult> {
+  const result = await pool.query(
+    `
+      SELECT id
+
+      FROM public.offline_conversion_uploads
+
+      WHERE
+
+      (
+        upload_status = 'pending'
+      )
+
+      OR
+
+      (
+        upload_status = 'failed'
+
+        AND upload_attempts < 5
+
+        AND
+        (
+          next_retry_at IS NULL
+
+          OR next_retry_at <= NOW()
+        )
+      )
+
+      ORDER BY created_at ASC;
+      `,
+  );
+
+  let uploaded = 0;
+
+  let failed = 0;
+
+  for (const row of result.rows) {
+    try {
+      await uploadOfflineConversionDM(row.id);
+
+      uploaded++;
+    } catch (error) {
+      console.error(`DM upload failed ${row.id}`, error);
+
+      failed++;
+    }
+  }
+
+  return {
+    processed: result.rows.length,
+
+    uploaded,
+
     failed,
   };
 }
